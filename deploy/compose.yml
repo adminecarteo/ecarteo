@@ -1,0 +1,50 @@
+services:
+  app:
+    image: ${ECARTEO_IMAGE:-ecarteo:local}
+    build:
+      context: ..
+      target: runner
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?Set the public Supabase URL}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:?Set the public Supabase key}
+    env_file: ../.env.production
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache:uid=1001,gid=1001,mode=0700
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    expose: ['3000']
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      ECARTEO_DOMAIN: ${ECARTEO_DOMAIN:?Set the website hostname}
+      ACME_EMAIL: ${ACME_EMAIL:?Set the certificate contact email}
+    restart: unless-stopped
+    ports: ['80:80', '443:443', '443:443/udp']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      app: { condition: service_healthy }
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+  maintenance:
+    profiles: [maintenance]
+    image: ecarteo-maintenance:local
+    build: { context: .., target: maintenance }
+    env_file: ../.env.production
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+volumes:
+  caddy_data:
+  caddy_config:

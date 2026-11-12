@@ -1,0 +1,17 @@
+node_modules
+.next
+.next-qa
+.git
+.aws
+.ssh
+.codex
+.agents
+backups
+*.dump
+.env*
+!.env.example
+test-results
+playwright-report
+*.tsbuildinfo
+.DS_Store
+.impeccable

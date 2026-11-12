@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-11-03T11:10:26.901Z",
+        "reason": "Assistant retained the supplied Ecarteo identity: Ecarteo Console.html lines 6 and 16-17 specify Inter; DESIGN.md documents locally bundled Inter as the shared brand font."
+      }
+    ]
+  }
+}

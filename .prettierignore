@@ -1,0 +1,11 @@
+node_modules
+.next
+.next-qa
+package-lock.json
+*.tsbuildinfo
+playwright-report
+test-results
+premium-audit.json
+
+next-env.d.ts
+.impeccable

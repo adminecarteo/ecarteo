@@ -1,0 +1,57 @@
+import { expect, test } from '@playwright/test';
+
+test('account forms never submit credentials in a URL before JavaScript is ready', async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({ javaScriptEnabled: false, baseURL });
+  try {
+    const page = await context.newPage();
+    await page.goto('/login');
+    const form = page.locator('form');
+    await expect(form).toHaveAttribute('method', 'post');
+    await expect(form).toHaveAttribute('action', '/api/auth');
+    await expect(page.getByRole('button', { name: 'Se connecter', exact: true })).toBeDisabled();
+    // Playwright's text selector excludes noscript; its rendered paragraph is visible without JS.
+    const notice = page.locator('noscript p');
+    await expect(notice).toHaveText(
+      'Activez JavaScript pour utiliser les formulaires de connexion sécurisés.',
+    );
+    await expect(notice).toBeVisible();
+    await page.getByLabel('Adresse email professionnelle').fill('prehydration@example.test');
+    await page.getByLabel('Mot de passe', { exact: true }).fill('never-place-this-in-a-url');
+    const request = page.waitForRequest((r) => new URL(r.url()).pathname === '/api/auth');
+    await form.evaluate((element) => (element as HTMLFormElement).submit());
+    const submitted = await request;
+    expect(submitted.method()).toBe('POST');
+    expect(new URL(submitted.url()).search).toBe('');
+  } finally {
+    await context.close();
+  }
+});
+
+test('new customer and staff features remain private before login', async ({ page, request }) => {
+  for (const path of ['/app/team', '/app/requests', '/app/billing']) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByText('Les Tilleuls', { exact: true })).toHaveCount(0);
+  }
+  for (const path of ['/api/team', '/api/audit-requests', '/api/billing']) {
+    const response = await request.get(path);
+    expect([401, 503]).toContain(response.status());
+    expect(response.headers()['cache-control']).toContain('no-store');
+  }
+});
+
+test('monitoring and billing webhooks reject unauthenticated or unsigned probes', async ({
+  request,
+}) => {
+  const health = await request.get('/api/health');
+  expect(health.status()).toBe(200);
+  expect(health.headers()['x-content-type-options']).toBe('nosniff');
+  expect((await request.get('/api/ready')).status()).toBe(404);
+  const webhook = await request.post('/api/billing/webhook', {
+    data: { type: 'checkout.session.completed' },
+  });
+  expect([400, 503]).toContain(webhook.status());
+});

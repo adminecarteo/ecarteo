@@ -1,0 +1,14 @@
+node_modules/
+.next/
+.next-qa/
+out/
+.env*
+!.env.example
+*.tsbuildinfo
+playwright-report/
+test-results/
+.DS_Store
+supabase/.temp/
+supabase/.branches/
+.impeccable/*
+!.impeccable/config.json

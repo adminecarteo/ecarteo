@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="fr">
+  <body>
+    <h1>Confirmez votre adresse email</h1>
+    <p>Votre espace Écartéo sera disponible après confirmation de votre adresse.</p>
+    <h2 lang="en">Confirm your email address</h2>
+    <p lang="en">Your Écartéo workspace will be available after you confirm your email address.</p>
+    <p>
+      <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup">
+        Confirmer mon compte / <span lang="en">Confirm my account</span>
+      </a>
+    </p>
+    <p>Si vous n’avez pas demandé ce compte, ignorez ce message.</p>
+    <p lang="en">If you did not request this account, ignore this message.</p>
+  </body>
+</html>

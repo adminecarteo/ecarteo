@@ -1,0 +1,43 @@
+# Launch sign-off checklist
+
+A checked item needs evidence and an owner. Implemented code or a skipped test does not satisfy a provider-dependent item. Local results are recorded in [VERIFICATION.md](VERIFICATION.md).
+
+## Local deliverables
+
+- [x] Landing/method/offers pages and account confirmation/recovery flows.
+- [x] Authenticated role/tenant isolation, transactional audit workflow and private evidence.
+- [x] Authenticated workflow acceptance against real local Supabase Auth/Storage services; see verification notes for exact coverage.
+- [x] Quality account administration, invitation redemption and customer audit requests.
+- [x] Optional Stripe checkout/portal/subscription webhook integration with configured prices.
+- [x] Twelve sector scenario templates for quality review before fieldwork.
+- [x] Bounded workspace loading, search/page controls and database indexes.
+- [x] Private readiness, restricted structured error events and maintenance utilities.
+- [x] Docker/Compose/Caddy deployment assets and CI quality gates.
+- [x] Backup/checksum verification tooling, privacy case inventory/export and immutable report supplements.
+- [x] Detailed Supabase, deployment, billing, account workflow and operations instructions.
+
+## Owner actions before customer launch
+
+- [ ] Create separate staging/production Supabase projects and record their regions/owners.
+- [ ] Set validated build/runtime configuration and protect service/database credentials.
+- [ ] Apply all six migrations; confirm RLS, private bucket and no conflicting policies.
+- [ ] Configure SMTP, sender DNS, exact redirects and email confirmation/recovery templates.
+- [ ] Bootstrap the first verified quality administrator and nominate client administrators.
+- [ ] Repeat signup/recovery/session/disabled-account and invite-replay acceptance against hosted staging with real SMTP delivery.
+- [ ] Repeat authenticated lifecycle E2E on hosted staging with two customers/operators and real upload/download/PDF bytes.
+- [ ] Test Stripe sandbox checkout, signed webhook retries, cancellation, portal invoices and failed payments if billing is enabled.
+- [ ] Approve commercial plans/prices, tax/invoice settings and support/refund handling before enabling live billing.
+- [ ] Review scenario templates and customer execution permissions; approve actual fieldwork scope.
+- [ ] Deploy on the final domain; verify HTTPS, private cache behavior, 10 MiB uploads and upstream abuse controls.
+- [ ] Connect source control/CI and record the immutable image, migration list and rollback image.
+- [ ] Route private readiness/error/backup/cleanup alerts to named responders and test delivery.
+- [ ] Schedule expired staging cleanup and review orphan counts during maintenance.
+- [ ] Configure encrypted off-site database+file backups, retention and backup-age alerts.
+- [ ] Complete a real Supabase/database/file restore drill and record recovery targets/results.
+- [ ] Approve company identity/contact, privacy notice, customer terms, retention/erasure/hold rules and customer communications.
+- [ ] Review mobile/keyboard/accessibility and test load for intended launch volume on target infrastructure.
+- [ ] Record launch decision, unresolved limitations and escalation owner.
+
+## Scope boundaries to communicate
+
+Écartéo operates one central audit service with customer tenants. Quality staff manage the service; this is not a multi-agency platform. Invitation links are manually shared by quality staff. Payments require your Stripe account/catalog; no invented pricing or charges occur automatically. Confirmation/recovery mail requires real SMTP. French/English/Chinese reports use PDF download; Arabic uses the locally bundled-font browser print/save-as-PDF path described in [PDF-LANGUAGES.md](PDF-LANGUAGES.md). Review actual customer text before offering additional writing systems. Immutable report corrections use dated supplements; destructive erasure requires an approved, tenant-specific retention process. A local database restore validates the tooling, not hosted provider recovery.

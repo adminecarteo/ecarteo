@@ -1,0 +1,22 @@
+{
+	email {$ACME_EMAIL}
+	log default {
+		format filter {
+			wrap json
+			fields {
+				request delete
+				resp_headers delete
+			}
+		}
+	}
+}
+
+{$ECARTEO_DOMAIN} {
+	encode zstd gzip
+	request_body {
+		max_size 12MB
+	}
+	header Strict-Transport-Security "max-age=31536000"
+	# No shared response cache, and no access logs containing auth query tokens.
+	reverse_proxy app:3000
+}

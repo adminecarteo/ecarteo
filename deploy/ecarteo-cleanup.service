@@ -1,0 +1,10 @@
+[Unit]
+Description=Remove expired unlinked Ecarteo staged evidence
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ecarteo
+ExecStart=/usr/bin/docker compose --env-file .env.production -f deploy/compose.yml --profile maintenance run --rm maintenance scripts/cleanup-staged-uploads.mjs --apply
+# Supply an OnFailure handler in your host monitoring configuration.
