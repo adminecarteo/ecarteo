@@ -2,15 +2,42 @@ import { pathToFileURL } from 'node:url';
 
 export function validateConfiguration(env, production = false) {
   const problems = [];
-  for (const key of [
+  const target = env.ECARTEO_DEPLOYMENT_TARGET || 'fullstack';
+  if (!['fullstack', 'frontend', 'backend'].includes(target))
+    problems.push('ECARTEO_DEPLOYMENT_TARGET: use fullstack, frontend or backend');
+  const frontend = target === 'frontend';
+  const billingKeys = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_BILLING_PLANS'];
+  const backendKeys = [
+    'DATABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'SUPABASE_DB_CA_CERT',
+    'OPS_HEALTH_TOKEN',
+    ...billingKeys,
+  ];
+  const required = [
     'APP_URL',
     'NEXT_PUBLIC_SUPABASE_URL',
     'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
-    'DATABASE_URL',
-    'SUPABASE_SERVICE_ROLE_KEY',
-  ])
-    if (!env[key]?.trim()) problems.push(`${key}: required`);
-  for (const key of ['APP_URL', 'NEXT_PUBLIC_SUPABASE_URL']) {
+    ...(frontend ? ['ECARTEO_BACKEND_ORIGIN'] : ['DATABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']),
+  ];
+  for (const key of required) if (!env[key]?.trim()) problems.push(`${key}: required`);
+  if (frontend) {
+    for (const key of backendKeys)
+      if (env[key]?.trim())
+        problems.push(
+          `${key}: must be absent or blank on a frontend deployment; configure it on the backend only`,
+        );
+  } else if (env.ECARTEO_BACKEND_ORIGIN?.trim()) {
+    problems.push(
+      'ECARTEO_BACKEND_ORIGIN: only frontend deployments may configure a backend origin',
+    );
+  }
+  const origins = {};
+  for (const key of [
+    'APP_URL',
+    'NEXT_PUBLIC_SUPABASE_URL',
+    ...(frontend ? ['ECARTEO_BACKEND_ORIGIN'] : []),
+  ]) {
     if (!env[key]) continue;
     try {
       const url = new URL(env[key]);
@@ -21,16 +48,20 @@ export function validateConfiguration(env, production = false) {
         url.pathname !== '/' ||
         url.search ||
         url.hash ||
+        (key === 'ECARTEO_BACKEND_ORIGIN' && production && local) ||
         (url.protocol !== 'https:' && !(url.protocol === 'http:' && local && !production))
       )
         problems.push(
-          `${key}: use an exact ${production ? 'HTTPS ' : ''}origin with no credentials, path, query or fragment`,
+          `${key}: use an exact ${production ? (key === 'ECARTEO_BACKEND_ORIGIN' ? 'remote HTTPS ' : 'HTTPS ') : ''}origin with no credentials, path, query or fragment`,
         );
+      else origins[key] = url.origin;
     } catch {
       problems.push(`${key}: invalid URL`);
     }
   }
-  if (env.DATABASE_URL) {
+  if (frontend && origins.APP_URL && origins.APP_URL === origins.ECARTEO_BACKEND_ORIGIN)
+    problems.push('ECARTEO_BACKEND_ORIGIN: must differ from APP_URL to avoid a rewrite loop');
+  if (!frontend && env.DATABASE_URL) {
     try {
       const url = new URL(env.DATABASE_URL);
       if (!['postgres:', 'postgresql:'].includes(url.protocol) || !url.hostname || !url.username)
@@ -41,7 +72,7 @@ export function validateConfiguration(env, production = false) {
       problems.push('DATABASE_URL: invalid URI');
     }
   }
-  if (production && (env.OPS_HEALTH_TOKEN?.length ?? 0) < 32)
+  if (!frontend && production && (env.OPS_HEALTH_TOKEN?.length ?? 0) < 32)
     problems.push('OPS_HEALTH_TOKEN: use at least 32 random characters');
   if (
     env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY === env.SUPABASE_SERVICE_ROLE_KEY &&
@@ -64,8 +95,7 @@ export function validateConfiguration(env, production = false) {
       problems.push('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: malformed legacy key');
     }
   }
-  const billingKeys = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_BILLING_PLANS'];
-  if (billingKeys.some((key) => env[key]?.trim())) {
+  if (!frontend && billingKeys.some((key) => env[key]?.trim())) {
     for (const key of billingKeys)
       if (!env[key]?.trim())
         problems.push(`${key}: configure all billing values or leave all blank`);

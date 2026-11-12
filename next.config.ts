@@ -1,10 +1,31 @@
 import type { NextConfig } from 'next';
+import { backendOrigin, isFrontendDeployment } from './src/lib/deployment-target';
+
+const apiOrigin = backendOrigin();
 const config: NextConfig = {
   // A separate cache permits a real local provider acceptance server alongside normal development.
-  distDir: process.env.ECARTEO_LOCAL_QA === '1' ? '.next-qa' : '.next',
+  distDir: isFrontendDeployment()
+    ? '.next-frontend'
+    : process.env.ECARTEO_LOCAL_QA === '1'
+      ? '.next-qa'
+      : '.next',
   reactStrictMode: true,
   output: 'standalone',
   experimental: { proxyClientMaxBodySize: '12mb' },
+  async rewrites() {
+    // beforeFiles prevents the colocated backend handlers from running on Vercel.
+    // Native external rewrites keep upload bytes outside Vercel Functions.
+    return {
+      beforeFiles: apiOrigin
+        ? [
+            { source: '/api/:path*', destination: `${apiOrigin}/api/:path*` },
+            { source: '/auth/:path*', destination: `${apiOrigin}/auth/:path*` },
+          ]
+        : [],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   async headers() {
     return [
       {
@@ -16,6 +37,16 @@ const config: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
+      ...(apiOrigin
+        ? ['/api/:path*', '/auth/:path*'].map((source) => ({
+            source,
+            headers: [
+              { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+              { key: 'Vary', value: 'Cookie' },
+              { key: 'x-vercel-enable-rewrite-caching', value: '0' },
+            ],
+          }))
+        : []),
     ];
   },
 };

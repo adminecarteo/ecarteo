@@ -3,6 +3,8 @@ import { getRequestLocale } from '@/server/locale';
 import { requireUser } from '@/server/auth';
 import { PortalShell } from '@/components/portal/portal-shell';
 import { JoinPanel } from '@/components/portal/join-panel';
+import { isFrontendDeployment } from '@/lib/deployment-target';
+import { FrontendJoin } from '@/components/frontend-bootstrap';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
@@ -13,6 +15,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 export default async function JoinPage() {
+  if (isFrontendDeployment()) return <FrontendJoin />;
   const locale = await getRequestLocale();
   const copy = (fr: string, en: string) => (locale === 'fr' ? fr : en);
   let email: string | null = null;

@@ -1,0 +1,16 @@
+.git
+.env*
+!.env.example
+.next*
+node_modules
+supabase/.temp
+supabase/.branches
+backups
+*.dump
+test-results
+playwright-report
+.aws
+.ssh
+.codex
+.agents
+.impeccable

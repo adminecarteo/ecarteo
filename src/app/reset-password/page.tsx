@@ -7,6 +7,8 @@ import { safeNext } from '@/lib/auth-schema';
 import { requireUser } from '@/server/auth';
 import { redirect } from 'next/navigation';
 import { AppError } from '@/server/http';
+import { isFrontendDeployment } from '@/lib/deployment-target';
+import { FrontendReset } from '@/components/frontend-bootstrap';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -22,6 +24,14 @@ export default async function Page({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const params = await searchParams;
+  if (isFrontendDeployment())
+    return (
+      <FrontendReset
+        next={safeNext(typeof params.next === 'string' ? params.next : undefined)}
+        notice={typeof params.notice === 'string' ? params.notice : undefined}
+      />
+    );
   if (authConfigured()) {
     try {
       await requireUser();
@@ -30,7 +40,6 @@ export default async function Page({
       throw error;
     }
   }
-  const params = await searchParams;
   return (
     <AuthShell>
       <AuthForm

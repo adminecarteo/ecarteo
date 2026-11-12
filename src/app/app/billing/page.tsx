@@ -10,6 +10,8 @@ import { WorkspaceError } from '@/server/workspace-errors';
 import { localizedErrorMessage } from '@/lib/api-error-messages';
 import { AuthShell } from '@/components/auth/auth-shell';
 import styles from '@/components/auth/auth.module.css';
+import { isFrontendDeployment } from '@/lib/deployment-target';
+import { FrontendBilling } from '@/components/frontend-bootstrap';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -25,6 +27,8 @@ export default async function BillingPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  if (isFrontendDeployment())
+    return <FrontendBilling returned={(await searchParams).checkout === 'returned'} />;
   const locale = await getRequestLocale();
   const copy = (fr: string, en: string) => (locale === 'fr' ? fr : en);
   let data: Awaited<ReturnType<typeof loadBilling>>;

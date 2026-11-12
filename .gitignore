@@ -1,6 +1,9 @@
 node_modules/
 .next/
 .next-qa/
+.next-frontend/
+next-env.d.ts
+.vercel/
 out/
 .env*
 !.env.example

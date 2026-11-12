@@ -1,11 +1,14 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isFrontendDeployment } from '@/lib/deployment-target';
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-  // Monitoring and signed provider webhooks do not use browser sessions.
-  if (['/api/health', '/api/ready', '/api/billing/webhook'].includes(request.nextUrl.pathname))
+  // Split deployments authenticate through browser-facing Render API responses.
+  if (isFrontendDeployment()) {
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
     return response;
+  }
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return response;
@@ -31,5 +34,7 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 export const config = {
-  matcher: ['/app/:path*', '/api/:path*', '/auth/:path*', '/reset-password'],
+  // API/auth handlers refresh their own cookies. In particular, uploads must not
+  // enter Vercel Routing Middleware before the native external rewrite.
+  matcher: ['/app/:path*', '/reset-password'],
 };

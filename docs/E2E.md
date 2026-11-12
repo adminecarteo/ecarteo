@@ -95,3 +95,50 @@ These cases exercise the real Auth/email provider and cannot be counted as passe
 `tests/e2e/local-provider.spec.ts` explicitly requires loopback app/mail URLs plus dedicated test credentials. After the console lifecycle fixture has created evidence, it exercises real signup/email confirmation, recovery and new-password login; denies a different customer's private file and guessed mission ID; searches organization choices; accepts an email-bound invitation; denies ordinary members billing/team administration; and checks immediate access denial after member deactivation. It sends mail only into the local SMTP sink.
 
 The initial local provider run uncovered a native-form fallback: submitting before JavaScript hydration could use a GET query. Auth forms now use POST and keep submission disabled until hydration; the public browser suite includes a no-JavaScript regression check. Real local-provider browser checks passed after this fix. Hosted SMTP, HTTPS cookies and cloud deployment still require staging acceptance.
+
+## Separate frontend and backend checks
+
+Run the two local application processes below against the prepared local Supabase workspace. The normal app on port 3000 can remain running. Each process uses a separate Next cache; do not run another frontend build or development server while `.next-frontend` is in use.
+
+Backend terminal:
+
+```sh
+ECARTEO_DEPLOYMENT_TARGET=backend ECARTEO_BACKEND_ORIGIN='' \
+ECARTEO_LOCAL_QA=1 APP_URL=http://127.0.0.1:3100 \
+npm run dev -- --port 3101
+```
+
+Frontend terminal:
+
+```sh
+ECARTEO_DEPLOYMENT_TARGET=frontend \
+ECARTEO_BACKEND_ORIGIN=http://127.0.0.1:3101 \
+APP_URL=http://127.0.0.1:3100 \
+DATABASE_URL='' SUPABASE_SERVICE_ROLE_KEY='' SUPABASE_DB_CA_CERT='' \
+OPS_HEALTH_TOKEN='' STRIPE_SECRET_KEY='' STRIPE_WEBHOOK_SECRET='' STRIPE_BILLING_PLANS='' \
+npm run dev -- --port 3100
+```
+
+Next loads the public Supabase URL/publishable key from `.env.local` for the login configuration indicator. All seven private values are explicitly blank on the frontend, overriding that file; browser requests use same-origin `/api` and `/auth` rewrites. Both processes must use the frontend's canonical `APP_URL` for origin checks.
+
+With all three dedicated roles in `.env.e2e.local` (including `E2E_OPERATOR_EMAIL` and `E2E_OPERATOR_PASSWORD`), run:
+
+```sh
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 E2E_DEPLOYMENT_TARGET=frontend \
+node --env-file=.env.e2e.local ./node_modules/@playwright/test/cli.js test \
+  tests/e2e/console.spec.ts tests/e2e/intake.spec.ts tests/e2e/languages.spec.ts \
+  tests/e2e/protected-session.spec.ts tests/e2e/frontend-bootstrap.spec.ts \
+  tests/e2e/split-transport.spec.ts
+```
+
+The split transport test additionally requires a loopback URL and all three fixture identities. It checks HttpOnly/Lax cookie forwarding, the server-derived role, replacement cookies after forcing an isolated session's cached expiry timestamp into the past, three rejected mutation origins, a real 10 MiB operator upload/download with matching SHA-256, denial of unpublished evidence to the client, and rejection of a 10 MiB + 1 byte file. It creates clearly labelled synthetic scenarios/missions/evidence for inspection and never signs out other sessions. Stop only the two QA application processes afterward; keep the user's normal app and local Supabase running.
+
+For CI, the focused bootstrap regression requires no provider, credentials or backend process:
+
+```sh
+E2E_DEPLOYMENT_TARGET=frontend npx playwright test --config=playwright.frontend.config.ts
+```
+
+This config starts an isolated frontend at port 3110 with synthetic public configuration, blank private credentials and browser-intercepted billing responses. It verifies that delayed locale reloads remove previous private content, new data remounts stateful billing, rejected sessions redirect, and sign-out during a pending request prevents later responses from restoring private content. These two cases explicitly skip in the normal fullstack suite unless `E2E_DEPLOYMENT_TARGET=frontend` is supplied. Do not run the focused config concurrently with another `.next-frontend` process.
+
+Local verification on 12 November 2026: the 13-case split browser set passed; the additional actual-provider transport/refresh test passed; and the standalone two-case CI bootstrap config passed. These results verify local rewrites and Supabase behavior. Hosted Vercel/Render proxy limits, HTTPS Secure cookies, production callback/SMTP delivery and CDN caching still require the staging checklist; a successful local 10 MiB transfer does not establish a hosting provider's current limit.

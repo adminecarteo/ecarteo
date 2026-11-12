@@ -11,6 +11,8 @@ import styles from '@/components/auth/auth.module.css';
 import { workspaceQueryParams } from '@/lib/workspace-query';
 import { getRequestLocale } from '@/server/locale';
 import { localizedErrorMessage } from '@/lib/api-error-messages';
+import { isFrontendDeployment } from '@/lib/deployment-target';
+import { FrontendWorkspace } from '@/components/frontend-bootstrap';
 
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -32,6 +34,7 @@ export default async function AppPage({
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params))
     if (typeof value === 'string') query.set(key, value);
+  if (isFrontendDeployment()) return <FrontendWorkspace query={query.toString()} />;
   try {
     workspace = await loadWorkspace(await requireAccount(), workspaceQueryParams(query));
   } catch (error) {

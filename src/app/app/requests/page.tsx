@@ -7,6 +7,8 @@ import { AppError } from '@/server/http';
 import { PortalFailure } from '@/components/portal/portal-failure';
 import { PortalShell } from '@/components/portal/portal-shell';
 import { RequestsPanel } from '@/components/portal/requests-panel';
+import { isFrontendDeployment } from '@/lib/deployment-target';
+import { FrontendRequests } from '@/components/frontend-bootstrap';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
@@ -16,6 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 export default async function RequestsPage() {
+  if (isFrontendDeployment()) return <FrontendRequests />;
   const locale = await getRequestLocale();
   const copy = (fr: string, en: string) => (locale === 'fr' ? fr : en);
   let account, data;

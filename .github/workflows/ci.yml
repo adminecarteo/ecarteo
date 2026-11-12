@@ -37,10 +37,29 @@ jobs:
         env:
           ECARTEO_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/ecarteo_test
       - run: npm run build
+      - name: Validate frontend production build without server secrets
+        env:
+          ECARTEO_DEPLOYMENT_TARGET: frontend
+          APP_URL: https://frontend.example.test
+          ECARTEO_BACKEND_ORIGIN: https://backend.example.test
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-project.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
+          DATABASE_URL: ''
+          SUPABASE_SERVICE_ROLE_KEY: ''
+          SUPABASE_DB_CA_CERT: ''
+          OPS_HEALTH_TOKEN: ''
+          STRIPE_SECRET_KEY: ''
+          STRIPE_WEBHOOK_SECRET: ''
+          STRIPE_BILLING_PLANS: ''
+        run: node scripts/validate-config.mjs --production && npm run build
       - run: npm run typecheck
       - run: npm audit --omit=dev --audit-level=moderate
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Verify frontend session bootstrap
+        env:
+          E2E_DEPLOYMENT_TARGET: frontend
+        run: npx playwright test --config=playwright.frontend.config.ts
       - name: Validate production Docker image
         run: docker build --target runner -t ecarteo:ci .
       - name: Validate maintenance Docker image

@@ -2,7 +2,20 @@
 
 Use staging first. The existing `.env.local` and local Supabase installation remain your local development environment; do not overwrite or repoint them while following this guide. This guide activates implemented code; it does not mean a cloud project, sender, domain, payment account or deployment already exists. Keep credentials in local environment files or your host's secret manager, never in chat, Git, screenshots or build arguments.
 
-The selected deployment path is **Docker on a VPS**. Since no hosted project, domain or email provider is configured yet, your first hosted action is to create the staging Supabase project in step 2. You can collect its credentials before choosing the VPS, domain and transactional email provider. Complete those choices before filling the final URLs and proceeding to email configuration or deployment. No provider purchase or cloud resource creation is performed by this guide.
+The selected deployment path is now **Vercel frontend + Render backend + Supabase**. Follow [VERCEL-RENDER.md](VERCEL-RENDER.md) for its account setup, environment split, routing and staged acceptance. A hosted staging Supabase project is connected; the hosting accounts, canonical app hostname and transactional email provider still need configuration. No provider purchase or deployment is performed by these files.
+
+The numbered Docker/VPS instructions below remain an **alternative fullstack deployment**. They are not the Render setup procedure: do not upload their Compose `.env.production` wholesale to Vercel, and do not run Caddy/Compose on either managed platform. The Supabase migration, email, staff-bootstrap and operational requirements still apply to both hosting paths.
+
+Use **admin-dev@ecarteo.fr** as the owner/contact for new Supabase, hosting and email-service accounts and as the first Écartéo administrator in each environment. This mailbox is working; another person manages `ecarteo.fr` DNS. Provide that person with the exact app and email-verification records after the host and email provider are selected. Keep the existing GitHub repository under `adminecarteo`. Operator and client users require their own email identities.
+
+### Staging checkpoint — 2026-11-12
+
+- Supabase CLI is authorized as `admin-dev@ecarteo.fr` and linked to `ikfxhhcxcmrgfuwxpjpr` in Paris (`eu-west-3`). Its current dashboard display name is `adminecarteo's Project`; this project is being used for Écartéo staging. The CLI's `production` target label refers to the Supabase project's main branch, not Écartéo's production environment.
+- All six repository migrations were applied to the initially empty project; local and remote migration history match. All 85 read-only schema, RLS and privilege checks passed. The 21 application tables have RLS enabled; `ecarteo-evidence` is private with a 10 MiB limit. The dashboard confirms `app_private` is excluded from exposed Data API schemas.
+- The ignored, owner-readable `.env.hosted-staging` contains the project URL, publishable key, server secret key and monitoring token. Read-only hosted Auth and Storage API checks passed; email sign-in and email confirmation are enabled.
+- `DATABASE_URL` is saved privately with URL-encoded credentials. A read-only database connection succeeded with TLS certificate and hostname verification enabled and confirmed all six migrations. The project dashboard's official root CA is saved as actual multiline PEM in `SUPABASE_DB_CA_CERT`. The pooler is `aws-0-eu-west-3.pooler.supabase.com:5432`, user `postgres.ikfxhhcxcmrgfuwxpjpr`, database `postgres`. `APP_URL` remains unset until the hosting and hostname choices are complete.
+- Local split-deployment preflight passed: the frontend production build, Render-mode Docker build/runtime checks, 208 tests with zero skipped, six-migration replay/SQL isolation and 13 browser cases. The bootstrap reload fix clears stale protected content. See the [local preflight checkpoint](VERCEL-RENDER.md#local-preflight-checkpoint--2026-11-12); these checks do not prove hosted 10 MiB uploads or email delivery.
+- Hosted SMTP, authentication redirects, staff accounts, Vercel/Render deployment, DNS, HTTPS and hosted end-to-end acceptance remain pending. Vercel email verification is pending for the intended owner. Render CLI authentication/workspace have been verified as `admin-dev@ecarteo.fr`, and its one-service staging Blueprint passed provider validation. Render's GitHub App installation remains pending with only `adminecarteo/ecarteo` selected. No Vercel project or Render service has been created/deployed for this setup. No production Supabase project or public application deployment exists yet. The running local app continues using `.env.local`.
 
 ## 1. Prepare your computer and repository
 
@@ -121,7 +134,7 @@ This repository includes a standalone Node application, maintenance image, Docke
    ```dotenv
    APP_URL=https://staging-audit.your-company.example
    ECARTEO_DOMAIN=staging-audit.your-company.example
-   ACME_EMAIL=operations@your-company.example
+   ACME_EMAIL=admin-dev@ecarteo.fr
    ECARTEO_IMAGE=ecarteo:staging-release-2026-11-12
    ```
 
@@ -154,7 +167,7 @@ Keep a loopback bind behind a reverse proxy on the same host. If the platform re
 
 ## 7. Bootstrap staff and verify hosted workflows
 
-1. After step 6 has verified HTTPS and readiness, open `/signup` on the exact deployed `APP_URL`, for example `https://staging-audit.your-company.example/signup`. Create the initial quality administrator account and confirm its email. Do not use localhost with the hosted configuration: the server requires the request origin to match `APP_URL`, and email links use the hosted Site URL.
+1. After step 6 has verified HTTPS and readiness, open `/signup` on the exact deployed `APP_URL`, for example `https://staging-audit.your-company.example/signup`. Create the initial quality administrator using `admin-dev@ecarteo.fr` and confirm its email. Create and confirm this identity separately in staging and production; each project has its own user UUID. Do not use localhost with the hosted configuration: the server requires the request origin to match `APP_URL`, and email links use the hosted Site URL.
 2. Look up its exact UUID in Supabase Authentication. Through the trusted SQL editor, after verifying the identity, promote that UUID:
 
    ```sql

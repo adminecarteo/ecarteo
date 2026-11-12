@@ -1,6 +1,7 @@
 node_modules
 .next
 .next-qa
+.next-frontend
 package-lock.json
 *.tsbuildinfo
 playwright-report
