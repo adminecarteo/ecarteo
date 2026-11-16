@@ -22,7 +22,7 @@ The [production handover](PRODUCTION-HANDOVER.md) records the two environments a
 
 - [x] Create separate staging/production Supabase projects and record their regions/owners.
 - [x] Set separate production and staging build/runtime credentials.
-- [ ] Complete the staging database credential rotation and verify Render reconnection.
+- [x] Rotate the staging database password and verify Render reconnection (owner: Intertrad). On 2026-11-16, a fresh SQL login succeeded and Render deployment `dep-dbtgsfnf3r2c73b8bmd0` went live. Its authenticated `/api/ready` check returned HTTP 200 with configuration, database, schema and storage all passing.
 - [x] Apply all seven migrations, confirm application RLS and verify the production private evidence bucket and 10 MiB limit.
 - [ ] Configure SMTP, sender DNS, exact redirects and email confirmation/recovery templates.
 - [x] Bootstrap and verify the first production quality administrator (`admin-dev@ecarteo.fr`).
