@@ -93,3 +93,31 @@ test('desktop and mobile layouts stay within the viewport', async ({ page }) => 
   await page.goto('/signup');
   await page.screenshot({ path: '/tmp/ecarteo-saas-qa/signup-mobile.png', fullPage: true });
 });
+
+test('compact public navigation fits small screens and restores keyboard focus', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 641, height: 850 });
+  await page.goto('/methode');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+  await page.setViewportSize({ width: 375, height: 812 });
+  const header = page.getByRole('banner');
+  const brand = await header.getByRole('link', { name: 'Écartéo, accueil' }).boundingBox();
+  const toggle = header.locator('summary');
+  const control = await toggle.boundingBox();
+  expect(brand).not.toBeNull();
+  expect(control).not.toBeNull();
+  expect(brand!.y + brand!.height).toBeGreaterThan(control!.y);
+
+  await toggle.focus();
+  await page.keyboard.press('Enter');
+  const current = page
+    .getByRole('navigation', { name: 'Navigation mobile' })
+    .getByRole('link', { name: 'La méthode' });
+  await expect(current).toHaveAttribute('aria-current', 'page');
+  await current.focus();
+  await page.keyboard.press('Escape');
+  await expect(current).toBeHidden();
+  await expect(toggle).toBeFocused();
+});

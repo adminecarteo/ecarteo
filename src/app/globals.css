@@ -36,13 +36,13 @@ img {
   --ink: #12172d;
   --muted: #5a6180;
   --line: #dce2eb;
-  --accent: #0a8589;
+  --accent: #087478;
   --accent-soft: #e2f6f7;
-  --ok: #16875a;
+  --ok: #14734e;
   --ok-soft: #e1f3ea;
-  --warn: #a9600b;
+  --warn: #94560b;
   --warn-soft: #fbeedb;
-  --bad: #c23a31;
+  --bad: #b5362c;
   --bad-soft: #fbe5e3;
   --crit: #8a1d52;
   --crit-soft: #f5e0ea;
@@ -1688,6 +1688,75 @@ input[type='checkbox'] {
 .table-frame {
   min-height: 180px;
 }
+.mission-roster {
+  container-type: inline-size;
+}
+@container (max-width: 640px) {
+  .mission-table,
+  .mission-table tbody {
+    display: block;
+    min-width: 0;
+  }
+  .mission-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .mission-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+    padding: 14px 4px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .mission-table tbody tr:first-child {
+    padding-top: 0;
+  }
+  .mission-table tbody tr:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .mission-table td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+  .mission-table td[data-label]::before {
+    display: block;
+    margin-bottom: 2px;
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 550;
+  }
+  .mission-table .mission-title {
+    grid-area: 1 / 1 / auto / -1;
+  }
+  .mission-title .table-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .mission-title .table-link::after {
+    flex: none;
+    content: '›';
+    font-size: 20px;
+  }
+  .mission-table .mission-status {
+    grid-area: 2 / 1 / auto / -1;
+  }
+}
 .notice {
   border: 1px solid var(--line);
   padding: 12px;
@@ -1734,9 +1803,11 @@ input[type='checkbox'] {
     gap: 18px;
   }
   .side {
-    position: static;
+    position: sticky;
+    top: max(6px, env(safe-area-inset-top, 0px));
+    z-index: 12;
     width: 100%;
-    max-height: none;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top, 0px)));
     padding: 12px;
     border-radius: 12px;
     gap: 12px;
@@ -1754,6 +1825,8 @@ input[type='checkbox'] {
   .mobile-menu {
     display: block;
     margin-left: auto;
+    min-height: 44px;
+    min-width: 60px;
   }
   .side .brand-row {
     display: flex;
@@ -1769,11 +1842,37 @@ input[type='checkbox'] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .nav a {
-    font-size: 12px;
-    padding: 9px 7px;
+    align-items: center;
+    min-height: 44px;
+    font-size: 13px;
+    padding: 8px;
   }
   .side-foot {
-    gap: 8px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+  }
+  .side .side-controls {
+    grid-column: 1 / -1;
+  }
+  .side-foot .local-note {
+    grid-column: 1 / -1;
+    margin-block: 8px;
+  }
+  .side-foot :is(.lnk, .theme-button, .langseg button) {
+    min-height: 44px;
+  }
+  .app :is(input:not([type='checkbox'], [type='radio']), textarea, select) {
+    font-size: 16px;
+  }
+  .app :is(.theme-button, .tabs button, .btn) {
+    min-height: 44px;
+  }
+  .mission-filters > .field {
+    width: 100%;
+  }
+  html:has(.app) {
+    scroll-padding-top: 88px;
   }
   main {
     width: 100%;
@@ -1830,9 +1929,6 @@ input[type='checkbox'] {
   }
   .bar {
     grid-template-columns: 110px minmax(0, 1fr) 26px;
-  }
-  .chart {
-    min-height: 180px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

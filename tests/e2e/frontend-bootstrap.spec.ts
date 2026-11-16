@@ -45,7 +45,7 @@ test('locale reload hides old billing data while pending and remounts the new ac
   await page.goto('/app/billing');
   await expect(page.getByText('Private account A', { exact: true })).toBeVisible();
   phase = 'reload';
-  await page.getByRole('button', { name: 'Français', exact: true }).click();
+  await page.getByRole('button', { name: 'FR — Français', exact: true }).click();
   await expect.poll(() => pending).toBeGreaterThan(0);
   await expect(page.getByRole('status')).toHaveText('Chargement de votre espace…');
   await expect(page.getByText('Private account A', { exact: true })).toHaveCount(0);
@@ -54,7 +54,7 @@ test('locale reload hides old billing data while pending and remounts the new ac
   await expect(page.getByText('Private account B', { exact: true })).toBeVisible();
   await expect(page.getByText('Private account A', { exact: true })).toHaveCount(0);
   phase = 'expired';
-  await page.getByRole('button', { name: 'English', exact: true }).click();
+  await page.getByRole('button', { name: 'EN — English', exact: true }).click();
   await expect(page).toHaveURL(/\/login\?next=%2Fapp%2Fbilling/);
   await expect(page.getByText('Private account B', { exact: true })).toHaveCount(0);
 });
@@ -81,7 +81,7 @@ test('a delayed bootstrap response cannot restore protected billing after a sign
   await page.goto('/app/billing');
   await expect(page.getByText('Private account A', { exact: true })).toBeVisible();
   reload = true;
-  await page.getByRole('button', { name: 'Français', exact: true }).click();
+  await page.getByRole('button', { name: 'FR — Français', exact: true }).click();
   await expect.poll(() => pending).toBeGreaterThan(0);
   await expect(page.getByText('Private account A', { exact: true })).toHaveCount(0);
   await page.evaluate(() => {

@@ -20,7 +20,10 @@ vi.mock('@/lib/locale-context', () => ({
     setLocale: vi.fn(),
   }),
 }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }) }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => '/app/requests',
+}));
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -205,8 +208,9 @@ describe('portal and billing translated rendering', () => {
       ),
     );
     expect(shell).toContain('aria-label="Workspace navigation"');
+    expect(shell).toMatch(/<a [^>]*aria-current="page"[^>]*>Audit requests<\/a>/);
     expect(shell).toContain('Team and access');
-    expect(shell).toContain('aria-label="English"');
+    expect(shell).toContain('aria-label="EN — English"');
     expect(shell).toContain('Request subject');
     expect(shell).toContain('Clinics and private centres');
     expect(shell).toContain('Awaiting review');

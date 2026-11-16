@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 async function selectEnglish(page: Page) {
   await page.goto('/login');
-  await page.getByRole('button', { name: 'English', exact: true }).click();
+  await page.getByRole('button', { name: 'EN — English', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome back.');
 }
@@ -29,7 +29,7 @@ test('language choice persists across public and account pages without clearing 
   await page
     .getByLabel('Adresse email professionnelle', { exact: true })
     .fill('language@example.test');
-  await page.getByRole('button', { name: 'English', exact: true }).click();
+  await page.getByRole('button', { name: 'EN — English', exact: true }).click();
   await expect(page.getByLabel('Work email address', { exact: true })).toHaveValue(
     'language@example.test',
   );
@@ -40,7 +40,7 @@ test('language choice persists across public and account pages without clearing 
     await page.goto(path);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'English', exact: true })).toHaveAttribute(
+    await expect(page.getByRole('button', { name: 'EN — English', exact: true })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
@@ -57,13 +57,13 @@ test('language choice persists across public and account pages without clearing 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
     );
-    await expect(page.getByRole('button', { name: 'English', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'EN — English', exact: true })).toBeVisible();
   }
   await page.screenshot({
     path: '/tmp/ecarteo-languages-qa/signup-english-mobile.png',
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'Français', exact: true }).click();
+  await page.getByRole('button', { name: 'FR — Français', exact: true }).click();
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await expect(page.getByLabel('Organisation', { exact: true })).toBeVisible();
@@ -91,7 +91,7 @@ test('admin language carries from login into the console and team/request pages'
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.getByRole('link', { name: 'Audit requests', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Audit requests');
-  await page.getByRole('button', { name: 'Français', exact: true }).click();
+  await page.getByRole('button', { name: 'FR — Français', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Demandes d’audit');
   await page.goto('/app');
   await expect(page.getByRole('button', { name: 'Se déconnecter', exact: true })).toBeVisible();
@@ -150,7 +150,7 @@ test('client can view a sample report and use English request and billing pages'
   await expect(
     page.getByText('Online subscriptions are not available yet.', { exact: false }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Français', exact: true }).click();
+  await page.getByRole('button', { name: 'FR — Français', exact: true }).click();
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
   await page.goto('/app');

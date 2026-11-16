@@ -947,7 +947,7 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 700px) {
   .site {
     padding: 0;
   }
@@ -963,7 +963,6 @@
     min-height: 76px;
     padding: 16px;
     gap: 12px;
-    flex-wrap: wrap;
     justify-content: space-between;
   }
   .desktopNav,
@@ -1018,8 +1017,13 @@
     color: var(--marketing-ink);
     font-size: 14px;
   }
-  .mobileNav nav a:hover {
+  .mobileNav nav a:hover,
+  .mobileNav nav a[aria-current='page'] {
     background: var(--marketing-light);
+  }
+  .mobileNav nav a[aria-current='page'] {
+    color: #087d83;
+    font-weight: 600;
   }
   .mobileNav nav a:last-child {
     background: var(--marketing-cyan);
@@ -1040,6 +1044,8 @@
     max-width: 45ch;
   }
   .heroActions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
     gap: 12px;
     margin-top: 24px;
   }
@@ -1207,10 +1213,23 @@
 }
 
 @media (max-width: 380px) {
+  .headerInner {
+    padding-inline: 12px;
+    gap: 8px;
+  }
   .headerInner .brand {
-    width: 100%;
+    gap: 4px;
+    font-size: 22px;
+  }
+  .headerInner .brand svg {
+    width: 28px;
+    height: 28px;
   }
   .headerInner .languageSwitcher {
     margin-left: auto;
+  }
+  .mobileNav summary {
+    gap: 7px;
+    padding-inline: 9px;
   }
 }

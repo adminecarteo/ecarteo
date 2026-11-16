@@ -89,13 +89,28 @@ export function MarketingShell({
                 <Arrow />
               </Link>
             </div>
-            <details className={styles.mobileNav}>
+            <details
+              className={styles.mobileNav}
+              onKeyDown={(event) => {
+                if (event.key !== 'Escape' || !event.currentTarget.open) return;
+                event.currentTarget.open = false;
+                event.currentTarget.querySelector('summary')?.focus();
+              }}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget))
+                  event.currentTarget.open = false;
+              }}
+            >
               <summary>
                 Menu<span aria-hidden="true">＋</span>
               </summary>
               <nav aria-label={copy('Navigation mobile', 'Mobile navigation')}>
-                <Link href="/methode">{copy('La méthode', 'Our method')}</Link>
-                <Link href="/offres">{copy('Les offres', 'Our offers')}</Link>
+                <Link href="/methode" aria-current={current === 'methode' ? 'page' : undefined}>
+                  {copy('La méthode', 'Our method')}
+                </Link>
+                <Link href="/offres" aria-current={current === 'offres' ? 'page' : undefined}>
+                  {copy('Les offres', 'Our offers')}
+                </Link>
                 <Link href="/login">{copy('Se connecter', 'Sign in')}</Link>
                 <Link href="/signup">{copy('Créer un compte', 'Create an account')}</Link>
               </nav>

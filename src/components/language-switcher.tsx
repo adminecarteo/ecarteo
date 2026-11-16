@@ -17,7 +17,7 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
           type="button"
           lang={language}
           title={language === 'fr' ? 'Français' : 'English'}
-          aria-label={language === 'fr' ? 'Français' : 'English'}
+          aria-label={language === 'fr' ? 'FR — Français' : 'EN — English'}
           aria-pressed={locale === language}
           onClick={() => setLocale(language)}
         >

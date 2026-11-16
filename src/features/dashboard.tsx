@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useConsole } from '@/lib/console-context';
 import {
@@ -302,19 +302,36 @@ export default function Dashboard() {
 }
 function TrendChart({ points }: { points: { label: string; v: number }[] }) {
   const { t } = useConsole();
-  if (points.length < 2) return <EmptyState>{t('chartEmpty')}</EmptyState>;
-  const W = 640,
-    H = 230,
+  const svg = useRef<SVGSVGElement>(null);
+  const [W, setWidth] = useState(640);
+  const hasTrend = points.length >= 2;
+  useEffect(() => {
+    if (!hasTrend || !svg.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = Math.round(entry.contentRect.width);
+      if (width > 0) setWidth(width);
+    });
+    observer.observe(svg.current);
+    return () => observer.disconnect();
+  }, [hasTrend]);
+  if (!hasTrend) return <EmptyState>{t('chartEmpty')}</EmptyState>;
+  const H = W < 450 ? 185 : 230,
     L = 36,
-    R = 18,
+    R = 28,
     T = 18,
     B = 30,
     x = (i: number) => L + ((W - L - R) * i) / (points.length - 1),
     y = (v: number) => T + (H - T - B) * (1 - v / 100);
   const path = points.map((p, i) => `${i ? 'L' : 'M'}${x(i)} ${y(p.v)}`).join(' ');
+  const tickCount = Math.min(points.length, Math.max(2, Math.floor((W - L - R) / 52) + 1));
+  const ticks = new Set(
+    Array.from({ length: tickCount }, (_, i) =>
+      Math.round((i * (points.length - 1)) / (tickCount - 1)),
+    ),
+  );
   return (
     <>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('chartAria')}>
+      <svg ref={svg} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('chartAria')}>
         <title>{points.map((p) => `${p.label}: ${p.v}/100`).join(', ')}</title>
         {[
           { top: 100, bottom: 80, level: 'ok' },
@@ -348,12 +365,16 @@ function TrendChart({ points }: { points: { label: string; v: number }[] }) {
               cy={y(p.v)}
               r={i === points.length - 1 ? 5.5 : 4}
             />
-            <text className="lbl" x={x(i)} y={y(p.v) - 11} textAnchor="middle">
-              {p.v}
-            </text>
-            <text className="ax" x={x(i)} y={H - 8} textAnchor="middle">
-              {p.label}
-            </text>
+            {ticks.has(i) && (
+              <>
+                <text className="lbl" x={x(i)} y={y(p.v) - 11} textAnchor="middle">
+                  {p.v}
+                </text>
+                <text className="ax" x={x(i)} y={H - 8} textAnchor="middle">
+                  {p.label}
+                </text>
+              </>
+            )}
           </g>
         ))}
       </svg>

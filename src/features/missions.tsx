@@ -59,7 +59,7 @@ export function Missions() {
         title={t('mTitle')}
         description={t(actor.role === 'operateur' ? 'mSubOp' : 'mSub')}
       />
-      <div className="ch">
+      <div className="ch mission-filters">
         <div className="tabs" role="group" aria-label={t('thStatus')}>
           {(
             [
@@ -91,10 +91,10 @@ export function Missions() {
           />
         </Field>
       </div>
-      <Card>
+      <Card className="mission-roster">
         {filtered.length ? (
           <div className="tblwrap">
-            <table>
+            <table className="mission-table" role="table">
               <thead>
                 <tr>
                   <th>{t('thDate')}</th>
@@ -109,9 +109,11 @@ export function Missions() {
                 {filtered
                   .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
                   .map((item) => (
-                    <tr key={item.id}>
-                      <td className="num">{formatDate(item.date, locale)}</td>
-                      <td>
+                    <tr key={item.id} role="row">
+                      <td className="num" data-label={t('thDate')} role="cell">
+                        {formatDate(item.date, locale)}
+                      </td>
+                      <td className="mission-title" role="cell">
                         <button
                           className="table-link"
                           onClick={() => navigate('missions', item.id)}
@@ -119,15 +121,17 @@ export function Missions() {
                           {tx(item.scenarioSnapshot.title)}
                         </button>
                       </td>
-                      <td>
+                      <td data-label={t('thClient')} role="cell">
                         {
                           state.clients.find(
                             (client) => client.id === item.scenarioSnapshot.clientId,
                           )?.name
                         }
                       </td>
-                      <td>{item.operator}</td>
-                      <td className="num">
+                      <td data-label={t('thOperator')} role="cell">
+                        {item.operator}
+                      </td>
+                      <td className="num" data-label={t('thProgress')} role="cell">
                         {t(
                           'progress',
                           item.steps.filter((step) => step.done).length,
@@ -135,7 +139,7 @@ export function Missions() {
                           duration(missionElapsed(item)),
                         )}
                       </td>
-                      <td>
+                      <td className="mission-status" role="cell">
                         <StatusBadge status={item.status} />
                       </td>
                     </tr>

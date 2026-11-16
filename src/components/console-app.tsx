@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ConsoleProvider, useConsole, NAV, type ConsoleProviderProps } from '@/lib/console-context';
@@ -45,6 +45,7 @@ function AppShell() {
     prepareSignOut,
   } = useConsole();
   const [expanded, setExpanded] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const views = {
     tableau: Dashboard,
     scenarios: Scenarios,
@@ -73,7 +74,18 @@ function AppShell() {
         />
       )}
       <div className="app">
-        <aside className={`side ${expanded ? 'expanded' : ''}`}>
+        <aside
+          className={`side ${expanded ? 'expanded' : ''}`}
+          onBlur={(event) => {
+            if (expanded && !event.currentTarget.contains(event.relatedTarget)) setExpanded(false);
+          }}
+          onKeyDown={(event) => {
+            if (expanded && event.key === 'Escape') {
+              setExpanded(false);
+              menuButton.current?.focus();
+            }
+          }}
+        >
           <div className="brand-row">
             <div className="brand">
               <div className="tile">
@@ -85,9 +97,10 @@ function AppShell() {
               </div>
             </div>
             <button
+              ref={menuButton}
               className="theme-button mobile-menu"
               aria-expanded={expanded}
-              aria-controls="console-nav"
+              aria-controls="console-nav console-account"
               onClick={() => setExpanded(!expanded)}
             >
               {expanded ? (locale === 'fr' ? 'Fermer' : 'Close') : 'Menu'}
@@ -119,7 +132,7 @@ function AppShell() {
               <Link href="/app/billing">{locale === 'fr' ? 'Facturation' : 'Billing'}</Link>
             )}
           </nav>
-          <div className="side-foot">
+          <div className="side-foot" id="console-account">
             <div className="side-controls">
               <div>
                 <label>{t('langLabel')}</label>
