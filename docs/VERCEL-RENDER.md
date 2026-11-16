@@ -1,6 +1,6 @@
-# Deploy Écartéo with Vercel, Render and Supabase
+# Historical deployment guide for Vercel, Render and Supabase
 
-Use this guide for the selected architecture: Vercel serves the frontend; its same-origin `/api/*` and `/auth/*` rewrites reach the Node backend on Render; Supabase provides PostgreSQL, Auth and private Storage. Browser requests stay on the frontend hostname. The backend uses the existing Next.js Docker runner, retaining the application's route handlers and authorization checks.
+This guide records the split deployment evaluated on November 12, 2026. The current staging service runs the frontend and backend together on Render. Follow the [current Render deployment instructions](DEPLOYMENT.md#deploy-staging-on-render) with the current Blueprint. References below to the backend-only Blueprint describe the configuration at commit `c7e7f36`.
 
 This guide prepares a deployment; it does not claim one has passed hosted acceptance. Keep the existing `.env.local` and local Supabase stack unchanged. Never upload that file to either host or paste private credentials into chat, Git, screenshots, command arguments or build logs.
 

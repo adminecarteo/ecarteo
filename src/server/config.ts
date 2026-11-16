@@ -1,4 +1,5 @@
 import 'server-only';
+import { deploymentTarget } from '@/lib/deployment-target';
 
 export function authConfigured(): boolean {
   return Boolean(
@@ -12,18 +13,25 @@ export function authConfig() {
   return { url, key };
 }
 export function siteOrigin(): string {
-  const value =
-    process.env.APP_URL || (process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:3000' : '');
+  const appUrl = process.env.APP_URL?.trim();
+  const useRenderOrigin =
+    !appUrl && process.env.RENDER === 'true' && deploymentTarget() === 'fullstack';
+  let value = appUrl;
+  if (useRenderOrigin) value = process.env.RENDER_EXTERNAL_URL?.trim();
+  else if (!value && process.env.NODE_ENV !== 'production') value = 'http://127.0.0.1:3000';
   if (!value) throw new Error('APP_URL_NOT_CONFIGURED');
   const url = new URL(value);
+  const localHttp =
+    !useRenderOrigin &&
+    url.protocol === 'http:' &&
+    ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   if (
     url.username ||
     url.password ||
     url.pathname !== '/' ||
     url.search ||
     url.hash ||
-    (url.protocol !== 'https:' &&
-      !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)))
+    (url.protocol !== 'https:' && !localHttp)
   ) {
     throw new Error('APP_URL_INVALID');
   }

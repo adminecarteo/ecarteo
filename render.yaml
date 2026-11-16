@@ -1,10 +1,7 @@
-# Staging only. Review docs/VERCEL-RENDER.md before creating any resources.
-# Free is an explicit preview default, not a production sizing decision.
-# The owner must choose and approve a paid compute plan before production.
-# Keep the chosen plan in this file after approval so a later sync preserves it.
+# Staging frontend and API share one service. See docs/DEPLOYMENT.md.
 services:
   - type: web
-    name: ecarteo-staging-backend
+    name: ecarteo-staging
     runtime: docker
     region: frankfurt
     plan: free
@@ -22,10 +19,8 @@ services:
       - key: PORT
         value: '10000'
       - key: ECARTEO_DEPLOYMENT_TARGET
-        value: backend
-      # Always the canonical Vercel frontend HTTPS origin, not the Render URL.
-      - key: APP_URL
-        sync: false
+        value: fullstack
+      # Render assigns RENDER_EXTERNAL_URL. Set APP_URL for a custom domain.
       - key: NEXT_PUBLIC_SUPABASE_URL
         sync: false
       - key: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
@@ -38,5 +33,3 @@ services:
         sync: false
       - key: OPS_HEALTH_TOKEN
         sync: false
-    # No ECARTEO_BACKEND_ORIGIN: backend traffic must not rewrite to itself.
-    # Stripe stays absent until the owner configures all billing values in Render.

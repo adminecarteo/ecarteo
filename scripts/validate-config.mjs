@@ -2,7 +2,9 @@ import { pathToFileURL } from 'node:url';
 
 export function validateConfiguration(env, production = false) {
   const problems = [];
-  const target = env.ECARTEO_DEPLOYMENT_TARGET || 'fullstack';
+  const target = env.ECARTEO_DEPLOYMENT_TARGET?.trim() || 'fullstack';
+  const useRenderOrigin = !env.APP_URL?.trim() && env.RENDER === 'true' && target === 'fullstack';
+  if (useRenderOrigin) env = { ...env, APP_URL: env.RENDER_EXTERNAL_URL };
   if (!['fullstack', 'frontend', 'backend'].includes(target))
     problems.push('ECARTEO_DEPLOYMENT_TARGET: use fullstack, frontend or backend');
   const frontend = target === 'frontend';
@@ -42,6 +44,7 @@ export function validateConfiguration(env, production = false) {
     try {
       const url = new URL(env[key]);
       const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+      const requireHttps = production || (key === 'APP_URL' && useRenderOrigin);
       if (
         url.username ||
         url.password ||
@@ -49,7 +52,7 @@ export function validateConfiguration(env, production = false) {
         url.search ||
         url.hash ||
         (key === 'ECARTEO_BACKEND_ORIGIN' && production && local) ||
-        (url.protocol !== 'https:' && !(url.protocol === 'http:' && local && !production))
+        (url.protocol !== 'https:' && !(url.protocol === 'http:' && local && !requireHttps))
       )
         problems.push(
           `${key}: use an exact ${production ? (key === 'ECARTEO_BACKEND_ORIGIN' ? 'remote HTTPS ' : 'HTTPS ') : ''}origin with no credentials, path, query or fragment`,

@@ -13,7 +13,7 @@ npm run dev
 
 Open http://127.0.0.1:3000. For a compiled local run, use `npm run build` followed by `npm start`; the start script loads `.env.local` and serves standalone assets. The public website and account pages work without credentials. The private workspace deliberately stays unavailable until Supabase is configured; it never falls back to sample data or a role selector.
 
-To run the complete authenticated application without a cloud account, follow the [local Supabase guide](docs/LOCAL-DEVELOPMENT.md). It covers Docker, captured confirmation/recovery emails, account creation and staff setup. For hosted projects, follow [deployment and activation](docs/DEPLOYMENT.md). A disposable local Supabase stack has been used for authenticated workflow verification; it is separate from your future hosted projects. No cloud project, paid subscription, production account, or public deployment has been created.
+To run the authenticated application locally, follow the [local Supabase guide](docs/LOCAL-DEVELOPMENT.md). It covers Docker, captured confirmation and recovery emails, account creation and staff setup. Staging uses one Render web service for the frontend and API with the existing hosted Supabase project. [Render deployment and activation](docs/DEPLOYMENT.md#deploy-staging-on-render)
 
 ## Implemented
 

@@ -1,5 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
+vi.mock('server-only', () => ({}));
+import { siteOrigin } from '@/server/config';
 
 const publicConfiguration = {
   APP_URL: 'https://audit.example.test',
@@ -37,6 +39,63 @@ function validate(env: Record<string, string>, production = true) {
   if (result.error) throw result.error;
   return { status: result.status, output: result.stdout + result.stderr };
 }
+
+describe('Render fullstack canonical origin', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it.each([
+    [
+      'provider-assigned origin',
+      'true',
+      'fullstack',
+      '',
+      'https://assigned.onrender.com',
+      'https://assigned.onrender.com',
+    ],
+    [
+      'custom domain override',
+      'true',
+      'fullstack',
+      'https://audit.example.test',
+      'https://assigned.onrender.com',
+      'https://audit.example.test',
+    ],
+    [
+      'malformed override',
+      'true',
+      'fullstack',
+      'https://audit.example.test/path',
+      'https://assigned.onrender.com',
+      null,
+    ],
+    ['insecure provider origin', 'true', 'fullstack', '', 'http://127.0.0.1', null],
+    [
+      'provider origin with path',
+      'true',
+      'fullstack',
+      '',
+      'https://assigned.onrender.com/path',
+      null,
+    ],
+    ['missing provider origin', 'true', 'fullstack', '', '', null],
+    ['other host', 'false', 'fullstack', '', 'https://assigned.onrender.com', null],
+    ['split backend', 'true', 'backend', '', 'https://assigned.onrender.com', null],
+    ['split frontend', 'true', 'frontend', '', 'https://assigned.onrender.com', null],
+  ] as const)('%s', (_case, render, target, appUrl, renderUrl, expected) => {
+    const env = {
+      ...(target === 'frontend' ? frontendConfiguration : backendConfiguration),
+      NODE_ENV: 'production',
+      RENDER: render,
+      ECARTEO_DEPLOYMENT_TARGET: target,
+      RENDER_EXTERNAL_URL: renderUrl,
+      APP_URL: appUrl,
+    };
+    for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
+    expect(validate(env).status).toBe(expected ? 0 : 1);
+    if (expected) expect(siteOrigin()).toBe(expected);
+    else expect(siteOrigin).toThrow();
+  });
+});
 
 describe('split deployment configuration boundaries', () => {
   it.each([undefined, '', 'fullstack', 'backend'])(
