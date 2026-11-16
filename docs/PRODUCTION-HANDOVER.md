@@ -9,6 +9,14 @@
 
 Both environments use free instances. Render may take time to wake up after inactivity. Both web services share the workspace’s free instance-hour allowance. The admin is `admin-dev@ecarteo.fr`. The setup computer holds its production password in the owner-readable, Git-ignored `.env.production-owner`. The three staging passwords are in `.env.e2e.hosted-staging`. Store production credentials in Intertrad’s private password manager. Run demo audits on staging. [Render Free limits](https://render.com/docs/free)
 
+## Verified release on 16 November 2026
+
+Application commit `313c8bf29083355daf7bed85b2bcc9f717c57429` was deployed first to staging (`dep-dbtg5ac9v7es73ahtkag`) and then to production (`dep-dbtg6urm8hqs73ardqfg`). The previous working production deploy is `dep-dbtg40jbc2fs73f3o9v0` at commit `2f617e0`. Both use the same seven migrations. [GitHub quality gates](https://github.com/adminecarteo/ecarteo/actions/runs/43874490557)
+
+- The release passed 231 database-backed and other automated tests and 35 distinct browser cases across their applicable configurations. All 14 steps of a fresh hosted staging audit passed. The assigned operator and the customer downloaded a byte-identical 10 MiB file. A different customer and an unassigned operator could not open the same report or evidence. The client PDF and corrective action persisted. Use the staging test credentials to revisit the [sample audit](https://ecarteo-staging-zy4j.onrender.com/app?view=rapport&id=8e5c3474-eb35-40fa-9400-17e607cbfc27).
+- Production owner sign-in through the app returned an active quality profile. Database, schema and private Storage readiness passed. French and English public pages, signup and the confirmation resend route returned HTTP 200. A small warm public smoke test completed nine requests at concurrency three. Higher-volume capacity acceptance requires Intertrad’s traffic target.
+- The daily GitHub workflow is registered for 04:37 UTC. Its first live manual run authenticated to production, checked readiness and previewed expired uploads successfully. [Maintenance run](https://github.com/adminecarteo/ecarteo/actions/runs/43875347838)
+
 ## Connect app.ecarteo.fr
 
 1. In the one.com DNS panel for `ecarteo.fr`, the DNS manager creates a **CNAME** with host **app**, value **ecarteo-production.onrender.com**, and the default TTL. Preserve the domain’s existing website and mail records.

@@ -22,20 +22,21 @@ The [production handover](PRODUCTION-HANDOVER.md) records the two environments a
 
 - [x] Create separate staging/production Supabase projects and record their regions/owners.
 - [x] Set separate production and staging build/runtime credentials.
-- [ ] Rotate the previously shared staging database password and verify Render reconnection.
+- [ ] Complete the staging database credential rotation and verify Render reconnection.
 - [x] Apply all seven migrations, confirm application RLS and verify the production private evidence bucket and 10 MiB limit.
 - [ ] Configure SMTP, sender DNS, exact redirects and email confirmation/recovery templates.
 - [x] Bootstrap and verify the first production quality administrator (`admin-dev@ecarteo.fr`).
 - [ ] Nominate customer administrators as real customers onboard.
 - [ ] Repeat signup/recovery/session/disabled-account and invite-replay acceptance against hosted staging with real SMTP delivery.
-- [ ] Repeat authenticated lifecycle E2E on hosted staging with two customers/operators and real upload/download/PDF bytes.
+- [x] Complete a hosted staging audit, verify the 10 MiB file and PDF, and deny the same report and file to a second customer and unassigned operator.
 - [ ] Test Stripe sandbox checkout, signed webhook retries, cancellation, portal invoices and failed payments if billing is enabled.
 - [ ] Approve commercial plans/prices, tax/invoice settings and support/refund handling before enabling live billing.
 - [ ] Review scenario templates and customer execution permissions; approve actual fieldwork scope.
 - [ ] Deploy on the final domain; verify HTTPS, private cache behavior, 10 MiB uploads and upstream abuse controls.
-- [ ] Connect source control/CI and record the immutable image, migration list and rollback image.
+- [x] Connect source control/CI and record the deployed commit, migrations, Render deployment ID and previous working release.
 - [ ] Route private readiness/error/backup/cleanup alerts to named responders and test delivery.
-- [ ] Schedule expired staging cleanup and review orphan counts during maintenance.
+- [x] Schedule daily expired-upload cleanup and verify its production preview from GitHub.
+- [ ] Review unexpected storage orphans and responder delivery during regular operations.
 - [ ] Configure encrypted off-site database+file backups, retention and backup-age alerts.
 - [x] Restore a database, accounts, report and evidence into an isolated Supabase stack and verify actual sign-in, file bytes and tenant isolation.
 - [ ] Retrieve a production backup from the approved off-site destination and measure recovery time against Intertrad’s targets.
