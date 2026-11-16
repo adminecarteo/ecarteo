@@ -44,6 +44,7 @@ export function backendOrigin(): string | undefined {
     'SUPABASE_SERVICE_ROLE_KEY',
     'SUPABASE_DB_CA_CERT',
     'OPS_HEALTH_TOKEN',
+    'OPS_CLEANUP_TOKEN',
     'STRIPE_SECRET_KEY',
     'STRIPE_WEBHOOK_SECRET',
     'STRIPE_BILLING_PLANS',

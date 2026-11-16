@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import type { Locale } from './i18n';
+import { auditOfferIds } from './audit-offer';
 import { authText } from './auth-copy';
 
-export type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
+export type AuthMode = 'login' | 'signup' | 'forgot' | 'reset' | 'resend';
 export type AuthResult = {
   error?: string;
   fieldErrors?: Record<string, string>;
@@ -30,6 +31,7 @@ export function getAuthInputSchema(locale: Locale) {
       z
         .object({
           action: z.literal('signup'),
+          offer: z.enum(auditOfferIds).optional(),
           name: z.string().trim().min(2, text('name')).max(120, text('nameLength')),
           company: z.string().trim().min(2, text('company')).max(250, text('companyLength')),
           email,

@@ -9,6 +9,7 @@ import { AuthForm } from '@/components/auth/auth-form';
 import { ConsoleApp } from '@/components/console-app';
 import { PortalShell } from '@/components/portal/portal-shell';
 import { TeamPanel } from '@/components/portal/team-panel';
+import { offerRequestPath, type AuditOfferId } from '@/lib/audit-offer';
 import { RequestsPanel } from '@/components/portal/requests-panel';
 import { JoinPanel } from '@/components/portal/join-panel';
 import Billing from '@/features/billing';
@@ -244,13 +245,13 @@ const loadRequests: Loader<{ account: AccountIdentity; data: RequestPage }> = as
   if (!Array.isArray(data.items)) throw invalidResponse();
   return { account, data };
 };
-export function FrontendRequests() {
+export function FrontendRequests({ offer }: { offer?: AuditOfferId }) {
   const { copy } = useLocale();
   return (
     <RemoteBootstrap
       resource="requests"
       load={loadRequests}
-      loginPath="/login?next=%2Fapp%2Frequests"
+      loginPath={`/login?next=${encodeURIComponent(offer ? offerRequestPath(offer) : '/app/requests')}`}
     >
       {({ account, data }) => {
         const quality = account.profile.role === 'qualite';
@@ -270,7 +271,7 @@ export function FrontendRequests() {
                   )
             }
           >
-            <RequestsPanel key={account.user.id} initial={data} quality={quality} />
+            <RequestsPanel key={account.user.id} initial={data} quality={quality} offer={offer} />
           </PortalShell>
         );
       }}

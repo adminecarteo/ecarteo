@@ -1,11 +1,12 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useLocale } from '@/lib/locale-context';
 import { ActionLink, Arrow, AuditPreview, MarketingShell, OffersOverview } from './site';
 import { getMethodSteps, getOffers } from './content';
 import styles from './marketing.module.css';
 
-export function HomePage() {
+export function HomePage({ publisher }: { publisher?: ReactNode }) {
   const { copy } = useLocale();
   const stages = [
     {
@@ -38,7 +39,7 @@ export function HomePage() {
     },
   ];
   return (
-    <MarketingShell>
+    <MarketingShell publisher={publisher}>
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
           <h1>
@@ -86,10 +87,10 @@ export function HomePage() {
   );
 }
 
-export function MethodPageContent() {
+export function MethodPageContent({ publisher }: { publisher?: ReactNode }) {
   const { locale, copy } = useLocale();
   return (
-    <MarketingShell current="methode">
+    <MarketingShell publisher={publisher} current="methode">
       <section className={styles.innerHero}>
         <p className={styles.sectionLabel}>{copy('La méthode Écartéo', 'The Écartéo method')}</p>
         <h1>
@@ -189,10 +190,10 @@ export function MethodPageContent() {
   );
 }
 
-export function OffersPageContent() {
+export function OffersPageContent({ publisher }: { publisher?: ReactNode }) {
   const { locale, copy } = useLocale();
   return (
-    <MarketingShell current="offres">
+    <MarketingShell publisher={publisher} current="offres">
       <section className={styles.innerHero}>
         <p className={styles.sectionLabel}>{copy('Les offres Écartéo', 'Écartéo offers')}</p>
         <h1>
@@ -244,8 +245,8 @@ export function OffersPageContent() {
                   )}
                 </p>
               )}
-              <ActionLink href="/signup">
-                {copy('Créer mon espace', 'Create my workspace')}
+              <ActionLink href={`/signup?offer=${offer.id}`}>
+                {copy(`Demander : ${offer.name}`, `Request: ${offer.name}`)}
               </ActionLink>
             </div>
           </article>

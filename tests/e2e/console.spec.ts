@@ -233,9 +233,9 @@ test.describe('authenticated client workspace', () => {
     await expect(page.getByRole('combobox', { name: /Aperçu du rôle|Role preview/ })).toHaveCount(
       0,
     );
-    if (!workspace.state.missions.length) {
+    if (!workspace.summary?.completed && !workspace.state.missions.length) {
       await expect(
-        page.getByRole('heading', { name: 'Bienvenue dans votre espace Écartéo', exact: true }),
+        page.getByRole('heading', { name: 'Votre premier rapport', exact: true }),
       ).toBeVisible();
       await expect(
         page.getByRole('link', { name: 'Découvrir les offres d’audit', exact: true }),

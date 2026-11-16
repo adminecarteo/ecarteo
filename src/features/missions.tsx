@@ -24,6 +24,7 @@ import {
   uncertainOutcome,
   type AttachmentMetadata,
 } from '@/lib/workspace-client';
+import styles from './missions.module.css';
 
 const PAGE_SIZE = 12;
 type MissionTab = 'active' | 'review' | 'done';
@@ -379,6 +380,16 @@ function MissionDetail({ mission }: { mission: Mission }) {
     }
   }
 
+  const fieldView = actor.role === 'operateur';
+  const timerControl = editable && (
+    <Button
+      variant={mission.runningSince ? 'secondary' : 'primary'}
+      onClick={timer}
+      disabled={pending}
+    >
+      {t(mission.runningSince ? 'pause' : mission.status === 'todo' ? 'startM' : 'resume')}
+    </Button>
+  );
   return (
     <>
       <div>
@@ -397,7 +408,49 @@ function MissionDetail({ mission }: { mission: Mission }) {
           {error}
         </div>
       )}
-      <div className="grid g32">
+      {fieldView && (
+        <>
+          <section
+            aria-label={tx({ fr: 'Chronomètre de mission', en: 'Mission timer' })}
+            className={`${styles.fieldTimer} ${editable && mission.status === 'doing' ? styles.activeTimer : ''}`}
+          >
+            <div>
+              <span className={styles.timerLabel} role="status">
+                {mission.runningSince
+                  ? tx({ fr: 'Chronomètre en marche', en: 'Timer running' })
+                  : mission.status === 'doing'
+                    ? tx({ fr: 'Chronomètre en pause', en: 'Timer paused' })
+                    : t('prodTime')}
+              </span>
+              <span className={styles.elapsed} role="timer" aria-label={t('prodTime')}>
+                {duration(elapsed)}
+              </span>
+            </div>
+            {timerControl}
+          </section>
+          <Card aria-labelledby="mission-brief-heading">
+            <h2 id="mission-brief-heading">
+              {tx({ fr: 'Consignes de mission', en: 'Mission brief' })}
+            </h2>
+            <dl className={styles.briefFacts}>
+              <div>
+                <dt>{t('objective')}</dt>
+                <dd>{tx(scenario.objective) || '—'}</dd>
+              </div>
+              <div>
+                <dt>{t('persona')}</dt>
+                <dd>{tx(scenario.persona) || '—'}</dd>
+              </div>
+            </dl>
+            <div className={`callout warn ${styles.limits}`}>
+              <strong>{t('limitsEx')}</strong>
+              <p>{tx(scenario.limits) || '—'}</p>
+            </div>
+            <p className={styles.target}>{t('target5h')}</p>
+          </Card>
+        </>
+      )}
+      <div className={`grid g32${fieldView ? ` ${styles.fieldWork}` : ''}`}>
         <div className="stack">
           <Card>
             <div className="ch">
@@ -548,53 +601,61 @@ function MissionDetail({ mission }: { mission: Mission }) {
               </div>
             )}
           </Card>
+          {fieldView && editable && mission.status === 'doing' && (
+            <Card className={styles.handoff}>
+              <div>
+                <h2>{tx({ fr: 'Validation qualité', en: 'Quality review' })}</h2>
+                <p className="muted">
+                  {t('stepsCount', doneCount, mission.steps.length)} · {t('evN', evidence.length)}
+                </p>
+              </div>
+              <Button variant="primary" disabled={pending} onClick={() => submit()}>
+                {t('submitR')}
+              </Button>
+            </Card>
+          )}
         </div>
         <div className="stack">
-          <div className="timerbox">
-            <span className="sub">{t('prodTime')}</span>
-            <span className="timer" role="timer" aria-label={t('prodTime')}>
-              {duration(elapsed)}
-            </span>
-            <div className="track">
-              <i style={{ width: `${Math.min(100, (elapsed / (5 * 3_600_000)) * 100)}%` }} />
-            </div>
-            <span className="sub">{t('target5h')}</span>
-            {editable ? (
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <Button
-                  variant={mission.runningSince ? 'secondary' : 'primary'}
-                  onClick={timer}
-                  disabled={pending}
-                >
-                  {t(
-                    mission.runningSince
-                      ? 'pause'
-                      : mission.status === 'todo'
-                        ? 'startM'
-                        : 'resume',
-                  )}
-                </Button>
-                <Button disabled={mission.status === 'todo' || pending} onClick={() => submit()}>
-                  {t('submitR')}
-                </Button>
+          {!fieldView && (
+            <>
+              <div className="timerbox">
+                <span className="sub">{t('prodTime')}</span>
+                <span className="timer" role="timer" aria-label={t('prodTime')}>
+                  {duration(elapsed)}
+                </span>
+                <div className="track">
+                  <i style={{ width: `${Math.min(100, (elapsed / (5 * 3_600_000)) * 100)}%` }} />
+                </div>
+                <span className="sub">{t('target5h')}</span>
+                {editable ? (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {timerControl}
+                    <Button
+                      disabled={mission.status === 'todo' || pending}
+                      onClick={() => submit()}
+                    >
+                      {t('submitR')}
+                    </Button>
+                  </div>
+                ) : mission.status === 'review' && actor.role === 'qualite' ? (
+                  <Button variant="primary" onClick={() => navigate('notation', mission.id)}>
+                    {t('scoreThis')}
+                  </Button>
+                ) : mission.status === 'done' ? (
+                  <Button variant="primary" onClick={() => navigate('rapport', mission.id)}>
+                    {t('seeReport')}
+                  </Button>
+                ) : null}
               </div>
-            ) : mission.status === 'review' && actor.role === 'qualite' ? (
-              <Button variant="primary" onClick={() => navigate('notation', mission.id)}>
-                {t('scoreThis')}
-              </Button>
-            ) : mission.status === 'done' && actor.role !== 'operateur' ? (
-              <Button variant="primary" onClick={() => navigate('rapport', mission.id)}>
-                {t('seeReport')}
-              </Button>
-            ) : null}
-          </div>
-          <Card>
-            <h3>{t('personaH')}</h3>
-            <p style={{ marginTop: 6 }}>{tx(scenario.persona) || '—'}</p>
-          </Card>
-          <div className="callout warn">
-            <b>{t('limitsB')}</b> {tx(scenario.limits) || '—'}
-          </div>
+              <Card>
+                <h3>{t('personaH')}</h3>
+                <p style={{ marginTop: 6 }}>{tx(scenario.persona) || '—'}</p>
+              </Card>
+              <div className="callout warn">
+                <b>{t('limitsB')}</b> {tx(scenario.limits) || '—'}
+              </div>
+            </>
+          )}
           <Card>
             <h3>{t('journal')}</h3>
             <ul className="log" style={{ marginTop: 10 }}>

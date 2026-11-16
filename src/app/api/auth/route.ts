@@ -2,6 +2,7 @@ import { getAuthInputSchema, safeNext } from '@/lib/auth-schema';
 import { authText } from '@/lib/auth-copy';
 import { requestLocale } from '@/lib/locale';
 import { createAuthClient, requireUser } from '@/server/auth';
+import { confirmedSignupPath } from '@/lib/audit-offer';
 import { consumeAuthAttempt } from '@/server/auth-rate-limit';
 import { isAuthProviderUnavailable } from '@/server/auth-provider-errors';
 import { siteOrigin } from '@/server/config';
@@ -60,7 +61,11 @@ export async function POST(request: Request) {
         email: input.email,
         password: input.password,
         options: {
-          data: { display_name: input.name, company_name: input.company },
+          data: {
+            display_name: input.name,
+            company_name: input.company,
+            ...(input.offer ? { audit_offer: input.offer } : {}),
+          },
           emailRedirectTo: `${siteOrigin()}/auth/callback`,
         },
       });
@@ -76,7 +81,8 @@ export async function POST(request: Request) {
           },
           error.status === 429 ? 429 : isAuthProviderUnavailable(error) ? 503 : 400,
         );
-      if (data.session && data.user?.email_confirmed_at) return json({ redirect: '/app' });
+      if (data.session && data.user?.email_confirmed_at)
+        return json({ redirect: confirmedSignupPath(input.offer) });
       return json({
         message: text('signupSent'),
       });
@@ -92,7 +98,11 @@ export async function POST(request: Request) {
               email: input.email,
               options: { emailRedirectTo: `${siteOrigin()}/auth/callback` },
             });
-      if (result.error && (result.error.status === 429 || isAuthProviderUnavailable(result.error)))
+      if (
+        result.error &&
+        !(result.error.status === 429 && result.error.code === 'over_email_send_rate_limit') &&
+        (result.error.status === 429 || isAuthProviderUnavailable(result.error))
+      )
         return json(
           { error: text('deliveryUnavailable') },
           result.error.status === 429 ? 429 : 503,

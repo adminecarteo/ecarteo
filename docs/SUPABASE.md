@@ -1,6 +1,6 @@
 # Supabase backend and data model
 
-The authenticated backend is implemented. The production app uses Supabase Auth, server-side PostgreSQL transactions, and private Supabase Storage. It does not create demo data or trust a browser role selector. A disposable local Supabase stack has exercised authenticated workflows; **your hosted staging/production projects and credentials are still required before deployment.** No cloud project or production resources were created during development.
+Production and staging each use a separate hosted Supabase project for Auth, PostgreSQL and private Storage. The application keeps role assignment and tenant access on the server. See the [production handover](PRODUCTION-HANDOVER.md) for actual project references, first administrator and remaining email/DNS activation.
 
 Apply every migration in filename order:
 
@@ -83,7 +83,7 @@ Staged uploads expire for attachment after 24 hours, and each account may have a
 
 The migrations, SQL isolation assertions and actual server command functions were exercised against disposable local PostgreSQL with small Supabase Auth/Storage schema stand-ins. Integration tests cover two-company isolation, UUID operator assignment, concurrent idempotent commands, stale observations, atomic approval, client action completion, direct report projection reads, staged file ownership, customer-only provisioning and durable auth throttling. File bytes use an in-memory Storage test double in these tests.
 
-The isolated database tests do not validate Auth tokens or provider file services. Separately, authenticated workflows have passed against a real local Supabase Auth/Storage stack. See [VERIFICATION.md](VERIFICATION.md) for exact local-provider coverage. Repeat the checks in `supabase/tests/README.md` and the deployed authentication/upload flows against hosted staging: external SMTP delivery, cloud configuration, provider backups, production networking and deployment remain unverified.
+The isolated database tests do not validate Auth tokens or provider file services. Separately, authenticated workflows have passed against a real local Supabase Auth/Storage stack. See [VERIFICATION.md](VERIFICATION.md) for exact local-provider coverage. Repeat the checks in `supabase/tests/README.md` and the deployed authentication/upload flows against hosted staging: record external SMTP delivery, backup recovery and target-network verification separately for each environment.
 
 Retention and erasure policy remain an administrative lifecycle decision. Published evidence and audit records are intentionally protected against ordinary deletes. The maintenance utilities now support audited case intake, tenant inventory/export and immutable report supplements for corrections; follow [OPERATIONS.md](OPERATIONS.md) and approve contract-specific retention before accepting real customer evidence.
 
@@ -97,4 +97,4 @@ The access model follows Supabase's documented separation of grants and RLS poli
 - `app_private.privacy_cases` and append-only `operations_events` support reviewed administrative requests and tenant exports. `public.report_addenda` stores immutable client-visible corrections alongside original reports. Ordinary clients cannot write these records.
 - `/api/ready` provides token-protected database/schema/private-bucket checks. Maintenance scripts and the coordinated backup/restore procedure are documented in [OPERATIONS.md](OPERATIONS.md).
 
-These additions are locally implemented. Local Supabase acceptance supplements the isolated database tests; hosted Auth/Storage configuration, SMTP delivery, Stripe checkout/events and target infrastructure still require staging acceptance.
+These additions are locally implemented. Local Supabase acceptance supplements the isolated database tests; see the [launch checklist](LAUNCH-CHECKLIST.md) for hosted acceptance and external dependencies.

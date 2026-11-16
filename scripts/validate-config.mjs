@@ -14,6 +14,7 @@ export function validateConfiguration(env, production = false) {
     'SUPABASE_SERVICE_ROLE_KEY',
     'SUPABASE_DB_CA_CERT',
     'OPS_HEALTH_TOKEN',
+    'OPS_CLEANUP_TOKEN',
     ...billingKeys,
   ];
   const required = [
@@ -78,12 +79,29 @@ export function validateConfiguration(env, production = false) {
   if (!frontend && production && (env.OPS_HEALTH_TOKEN?.length ?? 0) < 32)
     problems.push('OPS_HEALTH_TOKEN: use at least 32 random characters');
   if (
+    !frontend &&
+    env.OPS_CLEANUP_TOKEN &&
+    (env.OPS_CLEANUP_TOKEN.length < 32 || env.OPS_CLEANUP_TOKEN === env.OPS_HEALTH_TOKEN)
+  )
+    problems.push('OPS_CLEANUP_TOKEN: use a separate random token of at least 32 characters');
+  if (
     env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY === env.SUPABASE_SERVICE_ROLE_KEY &&
     env.SUPABASE_SERVICE_ROLE_KEY
   )
     problems.push(
       'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: must never contain the service credential',
     );
+  if (
+    env.SUPABASE_SERVICE_ROLE_KEY?.startsWith('sb_secret_') &&
+    !/^sb_secret_[A-Za-z0-9_-]+$/.test(env.SUPABASE_SERVICE_ROLE_KEY)
+  )
+    problems.push('SUPABASE_SERVICE_ROLE_KEY: configure the full server secret from the provider');
+  for (const key of ['ECARTEO_PRIVACY_URL', 'ECARTEO_TERMS_URL']) {
+    if (!env[key]) continue;
+    const url = URL.canParse(env[key]) ? new URL(env[key]) : null;
+    if (!url || url.protocol !== 'https:' || url.username || url.password)
+      problems.push(`${key}: use the approved public HTTPS document URL`);
+  }
   const publicKey = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
   if (publicKey.startsWith('sb_secret_'))
     problems.push('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: secret key exposed');

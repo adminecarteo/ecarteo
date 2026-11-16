@@ -1,6 +1,6 @@
 # Operations and recovery
 
-Scripts run from the repository root with Node 22+. Use a restricted maintenance identity/environment, keep backups outside the repository, and send sanitized stdout/stderr and exit status to your monitoring system. No maintenance task is automatically installed on your computer or hosted service.
+Scripts run from the repository root with Node 22+. Use a restricted maintenance identity, keep archives and keys out of version control, and send sanitized job results to your monitoring system.
 
 ## Monitoring
 
@@ -10,7 +10,13 @@ Scripts run from the repository root with Node 22+. Use a restricted maintenance
 - Alert on readiness failures, elevated 5xx/auth throttling, failed cleanup jobs, backup age, restore failures, email failures and Stripe webhook failures. Use your host's log collector/monitor, choose recipients and test an alert in staging.
 - Do not enable raw reverse-proxy query logging: confirmation URLs contain single-use tokens. The supplied Caddy runtime logger filters request objects and response headers, and access logging is disabled. See [Caddy log filtering](https://caddyserver.com/docs/caddyfile/directives/log#filter). Never ship evidence, request payloads, passwords or service keys to log aggregation.
 
-## Expired staged uploads: hourly
+## Render production readiness and staged uploads
+
+The [Production maintenance workflow](../.github/workflows/production-maintenance.yml) runs on the GitHub default branch `main` at 04:37 UTC daily. Set the repository variable `PRODUCTION_APP_ORIGIN` to the reviewed HTTPS production origin. Set separate repository secrets `PRODUCTION_HEALTH_TOKEN` and `PRODUCTION_CLEANUP_TOKEN` to match Render's `OPS_HEALTH_TOKEN` and `OPS_CLEANUP_TOKEN`. Use distinct tokens of at least 32 random characters. The workflow calls the production browser origin and receives only check statuses and counts.
+
+From GitHub Actions, run **Production maintenance** with **apply** unchecked for a preview. It checks readiness and calls the protected `GET /api/maintenance/staged-uploads`. Scheduled runs, or manual runs with **apply** checked, use the protected POST route to remove up to 100 eligible uploads. A remaining backlog fails the job so an operator can review and rerun it. The separate encrypted backup job below needs a private destination and a trusted host.
+
+## VPS or private maintenance host
 
 Dry run first:
 
@@ -26,7 +32,7 @@ node --env-file=.env.production scripts/cleanup-staged-uploads.mjs --apply
 
 The script selects unlinked staging rows older than 24 hours, locks each batch, removes through the Storage API, and retains reservations if removal fails. Maximum 100 per batch; repeat full batches. It never selects published evidence.
 
-For the container deployment, build the maintenance target and use `deploy/ecarteo-cleanup.service` with `deploy/ecarteo-cleanup.timer`. Adjust the installation directory and Docker executable for your host, copy the reviewed units into systemd, then enable the timer. Add your alerting system as an `OnFailure` handler. An equivalent private host scheduler may run the command hourly. These are host jobs, not a publicly callable cleanup API.
+For a self-hosted Docker deployment, build the maintenance target and use `deploy/ecarteo-cleanup.service` with `deploy/ecarteo-cleanup.timer`. Adjust the installation directory and Docker executable, install the units, then enable the hourly timer. Add your alerting system as an `OnFailure` handler. Choose one cleanup scheduler per environment.
 
 ## Storage orphans: review during maintenance
 
@@ -42,7 +48,26 @@ Before applying, stop application writes, verify you targeted the correct projec
 
 Supabase database backups do not contain Storage object bytes. Configure the provider's database recovery offering and a separate encrypted, access-controlled file backup destination; test both. [Supabase database backup documentation](https://supabase.com/docs/guides/platform/backups).
 
-The included utilities create an additional logical database archive and an exact evidence-bucket copy. They do not configure encryption, off-site storage, retention or provider backups for you.
+### Daily encrypted backup, with the application online
+
+`scripts/scheduled-backup.mjs` exports one PostgreSQL snapshot for the logical database archive and the evidence-object inventory. It downloads the immutable evidence, checks its stored hashes and verifies the manifest, then encrypts the pair with age. It publishes a timestamped `.tar.age` after reading back a matching SHA-256 from the destination. If a referenced object is missing or changes during the export, the job fails and can be rerun. Use a direct or **session** database connection and a database role permitted to dump all required schemas.
+
+1. On an offline recovery device, run `age-keygen -o ecarteo-recovery.txt`, then `age-keygen -y ecarteo-recovery.txt`. Give the backup host only the public recipient beginning with `age1`. Keep the identity file on encrypted offline media with a second controlled recovery copy in another location. Test both copies. Retain old identities until the last archive encrypted to each has expired.
+2. On a trusted maintenance host, install Node 22+, the repository's production dependencies, `age`, `tar`, and `pg_dump`/`pg_restore` compatible with the database server. Mount an owner-approved private off-site destination at `/mnt/ecarteo-backups`. Give the maintenance account write access and create a file named `.ecarteo-backup-destination` on that mount containing the single line `ecarteo-archive-v1`. Configure access control, versioning or retention on the destination. Use an encrypted local scratch volume with room for the database dump, evidence and encrypted archive. Normal completion removes scratch files. After a power loss, remove any leftover private scratch directory once the job is stopped.
+3. Create a mode-0600 environment file at `/etc/ecarteo/backup.env` with `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `ECARTEO_BACKUP_AGE_RECIPIENT`. Set `SUPABASE_DB_CA_CERT` if required. Optionally set `PG_DUMP_BINARY` and `PG_RESTORE_BINARY` to the correct full paths. The job does not require a maintenance-window flag.
+4. The supplied systemd units use the `ecarteo-backup` account, repository at `/opt/ecarteo`, Node at `/usr/bin/node`, scratch at `/var/lib/ecarteo-backup` and the mount above. Adjust these for the host, install [the service](../deploy/ecarteo-backup.service) and [the timer](../deploy/ecarteo-backup.timer), and run:
+
+   ```sh
+   sudo systemctl daemon-reload
+   sudo systemctl start ecarteo-backup.service
+   sudo journalctl -u ecarteo-backup.service -n 10
+   sudo systemctl enable --now ecarteo-backup.timer
+   systemctl list-timers ecarteo-backup.timer
+   ```
+
+   The default schedule is 02:00 UTC daily. The same job works on a private scheduler with `ECARTEO_BACKUP_DESTINATION` and `ECARTEO_BACKUP_SCRATCH` set to absolute paths. Alert on a nonzero job status and on the age of the last successful archive. Retain the logged archive hash and snapshot time separately. Complete a restore from the actual destination before relying on it for production recovery.
+
+### Manual backup during a maintenance window
 
 1. Stop application writes and maintenance cleanup for a consistent pair of snapshots. Record the release/migrations and start time.
 2. Set `ECARTEO_MAINTENANCE_CONFIRMED=yes` in the maintenance process. Use a direct or session PostgreSQL URI and a `pg_dump`/`pg_restore` version compatible with the server. Set `SUPABASE_DB_CA_CERT` if required; TLS verification remains enabled.
@@ -59,6 +84,33 @@ The included utilities create an additional logical database archive and an exac
 6. Resume writes and cleanup. The custom database archive includes database metadata/auth data accessible to the maintenance user but not cluster roles, SMTP secrets, DNS or object bytes. Keep infrastructure/secrets recovery instructions separately. A raw managed-schema archive is not automatically interchangeable with a provider project restore.
 
 ## Restore drill
+
+On 16 November 2026, a drill used two separate loopback Supabase projects running PostgreSQL 17 with all seven application migrations. The encrypted archive captured one synthetic published mission, its evidence, and four Auth users at **13:10:37 UTC**. Its SHA-256 was `5ad140fa88dc94ed596466541bdadcb4cc82fb2758b648e3eaa54d61d1049dd5`. Decryption and database restoration into the empty second project succeeded. All four users could sign in. The restored report matched the original JSON, the 67-byte private evidence file matched its original SHA-256, and a second tenant could not download it. Repeating the Storage restore preserved the same bytes. A deliberately altered encrypted test archive failed authentication during decryption.
+
+At **13:15:23 UTC** on the same day, a read-only snapshot of the production project produced a separate 491,832-byte encrypted archive on the owner's machine. The production evidence inventory was empty at that recovery point. Decryption, both internal checksums and full database data-stream decoding passed. The archive and its verification receipt are in the ignored `backups/production/` directory. Transfer the owner-only recovery identity to offline custody and verify retrieval from the approved off-site destination before activating the recurring job. A full hosted recovery drill requires a separate replacement project.
+
+To repeat the decryption, retrieve one trusted archive and the digest recorded by your backup job. Check that digest with `sha256sum archive.tar.age`, then use a fresh mode-0700 directory on encrypted storage:
+
+```sh
+umask 077
+age --decrypt --identity /offline/ecarteo-recovery.txt --output verified.tar archive.tar.age
+tar -tf verified.tar
+tar -xf verified.tar
+sha256sum --check SHA256SUMS
+node /opt/ecarteo/scripts/storage-backup.mjs verify --directory "$PWD/evidence"
+```
+
+The expected archive entries are `database/`, `evidence/`, `SHA256SUMS` and `snapshot.json`. On macOS, use `shasum -a 256` and `shasum -a 256 -c SHA256SUMS`. Recreate the empty target using the snapshot's application migrations so tables, grants, RLS policies and the private bucket exist before loading data.
+
+For the **isolated self-hosted Supabase drill**, the following imported application and Auth rows while retaining the target's managed schema versions. Set libpq's connection settings to the empty **target**, verify its identity, check that the application tables and `auth.users` are empty, and use a database administrator permitted to disable constraint triggers for this restore. The command restores in one transaction. The local `supabase_admin` account had this privilege. The managed hosted project's database account may have different privileges.
+
+```sh
+pg_restore --list database/database.dump > archive.list
+awk '/ (TABLE DATA|SEQUENCE SET) (public|app_private|auth) / && !/ TABLE DATA auth schema_migrations /' archive.list > app-data.list
+# Review app-data.list against the schemas and Auth features used in the source.
+pg_restore --dbname="$PGDATABASE" --data-only --disable-triggers --single-transaction \
+  --no-owner --no-privileges --use-list=app-data.list database/database.dump
+```
 
 Use an isolated replacement staging project/database, never a live target. Follow the provider's [database restore procedure](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore) for managed roles, Auth and Storage schema compatibility. A local vanilla PostgreSQL archive was exercised with `pg_restore --no-owner --no-privileges --exit-on-error`; that is not evidence of a managed Supabase restore.
 

@@ -44,16 +44,17 @@ test.describe('authenticated audit intake and protocol preparation', () => {
       await qualityPage.goto('/app/requests');
       await qualityPage.getByLabel('Rechercher', { exact: true }).fill(title);
       await qualityPage.getByRole('button', { name: 'Filtrer', exact: true }).click();
-      await expect(qualityPage.getByRole('heading', { name: title, exact: true })).toBeVisible();
-      await qualityPage
+      const request = qualityPage.getByRole('article').filter({
+        has: qualityPage.getByRole('heading', { name: title, exact: true }),
+      });
+      await expect(request).toBeVisible();
+      await request
         .getByLabel('Réponse au client', { exact: true })
         .fill('Périmètre de recette accepté. Aucun contact externe ne doit être effectué.');
-      await qualityPage.getByRole('button', { name: 'Accepter le périmètre', exact: true }).click();
-      await expect(
-        qualityPage.locator('article').getByText('Acceptée', { exact: true }),
-      ).toBeVisible();
-      await qualityPage.getByRole('button', { name: 'Préparer un scénario', exact: true }).click();
-      await qualityPage.getByRole('link', { name: 'Ouvrir le scénario', exact: true }).click();
+      await request.getByRole('button', { name: 'Accepter le périmètre', exact: true }).click();
+      await expect(request.getByText('Acceptée', { exact: true })).toBeVisible();
+      await request.getByRole('button', { name: 'Préparer un scénario', exact: true }).click();
+      await request.getByRole('link', { name: 'Ouvrir le scénario', exact: true }).click();
       await expect(qualityPage).toHaveURL(/\/app\?view=scenarios&id=/);
       await qualityPage.getByRole('button', { name: 'Valider le scénario', exact: true }).click();
       await expect(qualityPage.locator('#scenario-detail-error')).toContainText(

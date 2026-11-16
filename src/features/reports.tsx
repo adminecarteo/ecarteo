@@ -159,6 +159,13 @@ export default function Reports() {
     .sort((a, b) => b.date.localeCompare(a.date));
   const mission = selectedId ? done.find((item) => item.id === selectedId) : done[0];
   const report = mission ? publishedReport(state, mission) : null;
+  const reportId = report?.missionId;
+  useEffect(() => {
+    if (!reportId || !location.hash.startsWith('#action-')) return;
+    // The split frontend mounts the report after the browser's native fragment scroll.
+    const target = document.getElementById(location.hash.slice(1));
+    if (target instanceof HTMLInputElement && target.type === 'checkbox') target.focus();
+  }, [reportId]);
   const trackingLabel =
     locale === 'fr' ? 'Suivre les actions de cet audit' : 'Track this audit’s actions';
   const date = (value: string) => formatDate(value, locale);

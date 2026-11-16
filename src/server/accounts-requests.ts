@@ -15,6 +15,7 @@ import {
   type RequestPage,
   type OrganizationPage,
 } from '@/lib/accounts-requests-schema';
+import { auditOfferId } from '@/lib/audit-offer';
 import { database, type Transaction } from './database';
 import { WorkspaceError } from './workspace-errors';
 import { siteOrigin } from './config';
@@ -27,6 +28,7 @@ export interface TrustedAccess {
   active: boolean;
   is_client_admin: boolean;
   email: string;
+  audit_offer?: unknown;
 }
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 const iso = (value: unknown) => (value instanceof Date ? value.toISOString() : String(value));
@@ -40,7 +42,8 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 /** Read and lock authoritative assignments for the entire transaction. Never trust browser profile data. */
 export async function trustedAccess(tx: Transaction, userId: string): Promise<TrustedAccess> {
   if (!z.uuid().safeParse(userId).success) throw deny();
-  const rows = await tx`select p.*,u.email from public.profiles p join auth.users u on u.id=p.id
+  const rows =
+    await tx`select p.*,u.email,u.raw_user_meta_data->>'audit_offer' as audit_offer from public.profiles p join auth.users u on u.id=p.id
     where p.id=${userId} and p.active and u.email_confirmed_at is not null
     and not coalesce(u.is_anonymous,false) for share of p,u`;
   if (!rows[0]) throw deny();
@@ -329,6 +332,13 @@ export async function listRequests(userId: string, input: unknown): Promise<Requ
       page: query.page,
       pageSize: 25,
       total: Number(total[0].n),
+      ...(profile.role === 'client' &&
+      Number(total[0].n) === 0 &&
+      query.status === 'all' &&
+      !query.search &&
+      auditOfferId(profile.audit_offer)
+        ? { suggestedOffer: auditOfferId(profile.audit_offer) }
+        : {}),
       items: rows.map((r) => ({
         id: r.id,
         clientId: r.client_id,

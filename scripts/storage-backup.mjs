@@ -1,5 +1,4 @@
-import { createHash } from 'node:crypto';
-import { lstat, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { lstat, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import {
   bucketName,
@@ -11,17 +10,15 @@ import {
   safeFailure,
 } from './ops-common.mjs';
 
+import {
+  digest,
+  evidenceInventory,
+  evidenceMimeTypes,
+  exportEvidence,
+} from './evidence-backup.mjs';
+
 const mode = process.argv[2];
 const directory = option('--directory');
-const digest = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const mimeTypes = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-  'application/pdf',
-  'text/plain',
-  'message/rfc822',
-]);
 let db;
 try {
   if (!['export', 'verify', 'restore'].includes(mode) || !directory)
@@ -29,39 +26,9 @@ try {
   const root = resolve(directory);
   if (mode === 'export') {
     requireMaintenanceWindow();
-    // A new directory prevents accidental overwrite of an existing restore point.
-    await mkdir(root, { mode: 0o700 });
     db = maintenanceDatabase();
-    const rows = await db`select o.name, o.metadata->>'mimetype' as mime_type, e.sha256
-      from storage.objects o left join public.evidence e on e.object_path=o.name
-      where o.bucket_id=${bucketName} order by o.name`;
-    const entries = [];
-    for (const row of rows) {
-      if (!objectPattern.test(row.name)) throw new Error('Unrecognized evidence object path');
-      const { data, error } = await evidenceStorage().download(row.name);
-      if (error || !data) throw new Error('Object download failed');
-      const bytes = Buffer.from(await data.arrayBuffer());
-      const hash = digest(bytes);
-      if (row.sha256 && row.sha256 !== hash) throw new Error('Evidence checksum mismatch');
-      if (!bytes.length || bytes.length > 10485760) throw new Error('Unexpected evidence size');
-      const mimeType = row.mime_type || data.type;
-      if (!mimeTypes.has(mimeType)) throw new Error('Unexpected evidence MIME type');
-      const file = `${entries.length}.bin`;
-      await writeFile(join(root, file), bytes, { flag: 'wx', mode: 0o600 });
-      entries.push({ objectPath: row.name, file, size: bytes.length, sha256: hash, mimeType });
-    }
-    await writeFile(
-      join(root, 'manifest.json'),
-      JSON.stringify(
-        { version: 1, bucket: bucketName, createdAt: new Date().toISOString(), entries },
-        null,
-        2,
-      ),
-      { flag: 'wx', mode: 0o600 },
-    );
-    console.log(
-      JSON.stringify({ event: 'storage_backup', objects: entries.length, complete: true }),
-    );
+    const rows = await db.begin('isolation level repeatable read read only', evidenceInventory);
+    await exportEvidence(root, rows);
   } else {
     const manifestPath = join(root, 'manifest.json');
     if (!(await lstat(manifestPath)).isFile() || (await lstat(manifestPath)).isSymbolicLink())
@@ -79,7 +46,7 @@ try {
         !objectPattern.test(entry.objectPath) ||
         paths.has(entry.objectPath) ||
         entry.file !== `${index}.bin` ||
-        !mimeTypes.has(entry.mimeType) ||
+        !evidenceMimeTypes.has(entry.mimeType) ||
         !Number.isInteger(entry.size) ||
         entry.size < 1 ||
         entry.size > 10485760 ||

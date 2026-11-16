@@ -335,7 +335,14 @@ describe.skipIf(!testUrl).sequential('team and intake transactions (disposable P
         scores: Object.fromEntries(CRITERIA.map((c) => [c.id, 3])),
         comments: {},
         critical: false,
-        actions: [],
+        actions: [
+          {
+            critId: 'suivi',
+            horizon: id === original ? 7 : 30,
+            text: 'Assign a follow-up owner',
+            owner: 'Reception',
+          },
+        ],
       });
     }
     beforeAll(async () => {
@@ -418,6 +425,32 @@ describe.skipIf(!testUrl).sequential('team and intake transactions (disposable P
           status: 403,
         },
       );
+    });
+    it('finds the client’s latest publication and earliest outstanding action even outside the workspace page', async () => {
+      const account = { user: { id: ids.clientA } };
+      const query = { view: 'tableau', limit: 1, q: 'unmatched workspace search' } as const;
+      const first = await loadWorkspace(account, query);
+      expect(first.state.missions).toHaveLength(0);
+      const overview = first.summary!.clientDashboard!;
+      expect(overview.reports.map((report) => report.missionId)).toEqual([
+        original,
+        second,
+        retest,
+      ]);
+      expect(overview.nextAction).toMatchObject({ missionId: original, owner: 'Reception' });
+      await run({ type: 'action.toggle', id: overview.nextAction!.id, done: true }, ids.clientA);
+      const next = await loadWorkspace(account, query);
+      expect(next.summary?.clientDashboard?.nextAction?.missionId).toBe(second);
+      const other = await loadWorkspace(
+        { user: { id: ids.clientB } },
+        { ...query, client: ids.tenantA },
+      );
+      expect(other.summary?.clientDashboard).toEqual({ reports: [], nextAction: null });
+      for (const staff of [ids.quality, ids.reportOperator]) {
+        expect(
+          (await loadWorkspace({ user: { id: staff } }, query)).summary?.clientDashboard,
+        ).toBeUndefined();
+      }
     });
   });
   it('lets a customer cancel pending intake but not an accepted request', async () => {

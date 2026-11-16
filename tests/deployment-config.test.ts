@@ -24,6 +24,7 @@ const privateKeys = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_DB_CA_CERT',
   'OPS_HEALTH_TOKEN',
+  'OPS_CLEANUP_TOKEN',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
   'STRIPE_BILLING_PLANS',
@@ -111,6 +112,7 @@ describe('split deployment configuration boundaries', () => {
         DATABASE_URL: '',
         SUPABASE_SERVICE_ROLE_KEY: '',
         OPS_HEALTH_TOKEN: '',
+        OPS_CLEANUP_TOKEN: '',
       });
       expect(missing.status).toBe(1);
       expect(missing.output).toContain('DATABASE_URL: required');
@@ -212,6 +214,20 @@ describe('split deployment configuration boundaries', () => {
       expect(result.output).toContain('must differ from APP_URL');
     },
   );
+
+  it('rejects masked provider secrets and invalid published document URLs', () => {
+    const result = validate({
+      ...backendConfiguration,
+      SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_••••••••',
+      ECARTEO_PRIVACY_URL: 'https://private@example.test/draft',
+      ECARTEO_TERMS_URL: 'http://example.test/terms',
+    });
+    expect(result.status).toBe(1);
+    expect(result.output).toContain('SUPABASE_SERVICE_ROLE_KEY');
+    expect(result.output).toContain('ECARTEO_PRIVACY_URL');
+    expect(result.output).toContain('ECARTEO_TERMS_URL');
+    expect(result.output).not.toContain('private@example.test');
+  });
 
   it('continues detecting service credentials accidentally assigned to the public frontend key', () => {
     for (const key of [

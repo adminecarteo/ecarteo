@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 vi.mock('server-only', () => ({}));
 vi.mock('@/server/database', () => ({ database: vi.fn() }));
 vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn() }));
-import { authorizedMonitor, readiness } from '@/server/operations';
+import { authorizedCleanup, authorizedMonitor, readiness } from '@/server/operations';
 import { database } from '@/server/database';
 import { createClient } from '@supabase/supabase-js';
 
@@ -45,6 +45,19 @@ describe('operations boundaries', () => {
       data: { public: false, file_size_limit: 10485760 },
     });
     expect(await readiness()).toMatchObject({ status: 'ready' });
+  });
+  it('keeps readiness and cleanup credentials separate and disables cleanup on a collision', () => {
+    const health = 'a'.repeat(48);
+    const cleanup = 'b'.repeat(48);
+    vi.stubEnv('OPS_CLEANUP_TOKEN', cleanup);
+    expect(authorizedCleanup('Bearer ' + cleanup)).toBe(true);
+    expect(authorizedCleanup('Bearer ' + health)).toBe(false);
+    expect(authorizedMonitor('Bearer ' + cleanup)).toBe(false);
+    expect(authorizedCleanup(null)).toBe(false);
+    vi.stubEnv('OPS_CLEANUP_TOKEN', health);
+    expect(authorizedCleanup('Bearer ' + health)).toBe(false);
+    vi.stubEnv('OPS_CLEANUP_TOKEN', 'short');
+    expect(authorizedCleanup('Bearer short')).toBe(false);
   });
   it('configuration diagnostics reject secret keys in public variables without printing values', () => {
     const secret = 'sb_secret_never_print_this';

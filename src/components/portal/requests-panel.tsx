@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import { requestBriefs, type AuditOfferId } from '@/lib/audit-offer';
+import { getOffers } from '@/components/marketing/content';
 import { useRef, useState, type FormEvent } from 'react';
 import type { AuditRequestRecord, RequestPage } from '@/lib/accounts-requests-schema';
 import { useLocale } from '@/lib/locale-context';
@@ -31,11 +33,25 @@ function requestLabels(copy: (fr: string, en: string) => string) {
   };
   return { statuses, sectors, channels };
 }
-export function RequestsPanel({ initial, quality }: { initial: RequestPage; quality: boolean }) {
-  const { copy } = useLocale();
+export function RequestsPanel({
+  initial,
+  quality,
+  offer,
+}: {
+  initial: RequestPage;
+  quality: boolean;
+  offer?: AuditOfferId;
+}) {
+  const { copy, locale } = useLocale();
+  const [draftOffer, setDraftOffer] = useState(
+    quality ? undefined : (offer ?? initial.suggestedOffer),
+  );
+  const [editedSubject, setEditedSubject] = useState<string>();
+  const [editedBrief, setEditedBrief] = useState<string>();
+  const selectedOffer = draftOffer && getOffers(locale).find((item) => item.id === draftOffer);
   const { statuses, sectors, channels } = requestLabels(copy);
   const [data, setData] = useState(initial);
-  const [formOpen, setFormOpen] = useState(initial.total === 0);
+  const [formOpen, setFormOpen] = useState(Boolean(draftOffer) || initial.total === 0);
   const formToggle = useRef<HTMLButtonElement>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
@@ -79,6 +95,14 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
       });
       requestId.current = null;
       form.reset();
+      setDraftOffer(undefined);
+      setEditedSubject(undefined);
+      setEditedBrief(undefined);
+      if (offer) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('offer');
+        window.history.replaceState(window.history.state, '', url);
+      }
       setFormOpen(false);
       formToggle.current?.focus();
       setMessage(
@@ -123,7 +147,16 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
         {!quality && (
           <section className={styles.card} id="new-audit-request" hidden={!formOpen}>
             <h2>{copy('Demander un audit', 'Request an audit')}</h2>
+            {selectedOffer && (
+              <p className={styles.muted}>
+                {copy(
+                  `Offre choisie : ${selectedOffer.name}. Adaptez la demande à votre parcours avant de l’envoyer.`,
+                  `Selected offer: ${selectedOffer.name}. Edit the request to describe your journey before sending it.`,
+                )}
+              </p>
+            )}
             <form
+              key={draftOffer ?? 'blank'}
               className={styles.form}
               onSubmit={submit}
               onChange={() => {
@@ -134,6 +167,8 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
                 {copy('Objet de la demande', 'Request subject')}
                 <input
                   name="title"
+                  value={editedSubject ?? selectedOffer?.name ?? ''}
+                  onChange={(event) => setEditedSubject(event.target.value)}
                   required
                   minLength={5}
                   maxLength={160}
@@ -161,7 +196,9 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
                       name="channels"
                       type="checkbox"
                       value={value}
-                      defaultChecked={value === 'email'}
+                      defaultChecked={
+                        value === 'email' || (draftOffer === 'flash' && value === 'form')
+                      }
                     />
                     {label}
                   </label>
@@ -190,6 +227,8 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
                 {copy('Votre besoin', 'Your requirements')}
                 <textarea
                   name="brief"
+                  value={editedBrief ?? (draftOffer ? requestBriefs[draftOffer][locale] : '')}
+                  onChange={(event) => setEditedBrief(event.target.value)}
                   required
                   minLength={20}
                   maxLength={5000}

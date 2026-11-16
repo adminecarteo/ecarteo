@@ -2,6 +2,8 @@
 
 Écartéo combines a public website with an authenticated B2B customer-experience audit platform. It follows the supplied Écartéo prototype and deployment dossier: scope a journey, collect evidence, validate the assessment, publish a report, track corrective actions, then retest.
 
+[Production application](https://ecarteo-production.onrender.com) · [Staging for audit testing](https://ecarteo-staging-zy4j.onrender.com) · [Deployment handover](docs/PRODUCTION-HANDOVER.md)
+
 ## Run locally
 
 Requires Node.js 22.13+ and npm.

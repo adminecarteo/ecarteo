@@ -2,11 +2,11 @@ import { spawn } from 'node:child_process';
 import { chmod, mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { option, requireMaintenanceWindow, safeFailure } from './ops-common.mjs';
+import { backupSnapshot, option, safeFailure } from './ops-common.mjs';
 
 let certificateDirectory;
 try {
-  requireMaintenanceWindow();
+  const snapshot = backupSnapshot();
   const output = option('--directory');
   if (!output || !process.env.DATABASE_URL)
     throw new Error('Database and new backup directory required');
@@ -47,6 +47,7 @@ try {
     '--format=custom',
     '--no-owner',
     '--no-privileges',
+    ...(snapshot ? [`--snapshot=${snapshot}`] : []),
     '--exclude-table-data=storage.objects',
     `--file=${file}`,
   ]);

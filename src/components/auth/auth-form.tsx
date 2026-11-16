@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState, useSyncExternalStore, type FormEvent } from 'react';
 import { getAuthInputSchema, type AuthMode, type AuthResult } from '@/lib/auth-schema';
+import { getOffers } from '@/components/marketing/content';
+import { offerRequestPath, type AuditOfferId } from '@/lib/audit-offer';
 import { useLocale } from '@/lib/locale-context';
 import { authText, translateAuthFeedback } from '@/lib/auth-copy';
 import styles from './auth.module.css';
@@ -19,6 +21,12 @@ const formContent = {
       description:
         'Créez votre espace client pour centraliser vos audits, vos preuves et vos actions.',
       submit: 'Créer mon espace',
+    },
+    resend: {
+      title: 'Confirmez votre adresse email.',
+      description:
+        'Indiquez l’adresse utilisée pour créer votre compte afin de recevoir un nouveau lien de confirmation.',
+      submit: 'Renvoyer la confirmation',
     },
     forgot: {
       title: 'Retrouvez votre accès.',
@@ -44,6 +52,12 @@ const formContent = {
         'Create your customer workspace to bring your audits, evidence and actions together.',
       submit: 'Create my workspace',
     },
+    resend: {
+      title: 'Confirm your email address.',
+      description:
+        'Enter the email you used to create your account to request a new confirmation link.',
+      submit: 'Resend confirmation email',
+    },
     forgot: {
       title: 'Regain access.',
       description: 'Enter your email address. We will send you a link to choose a new password.',
@@ -62,10 +76,6 @@ const notices: Record<string, readonly [string, string]> = {
     'Your password has been changed. You can sign in again.',
   ],
   'signed-out': ['Vous êtes déconnecté.', 'You have been signed out.'],
-  'invalid-link': [
-    'Ce lien est invalide ou a expiré. Demandez un nouveau lien de récupération ou de confirmation.',
-    'This link is invalid or has expired. Request a new recovery or confirmation link.',
-  ],
 };
 const subscribeHydration = () => () => {};
 const clientHydrated = () => true;
@@ -74,11 +84,13 @@ const serverHydrated = () => false;
 export function AuthForm({
   mode,
   configured,
+  offer,
   next = '/app',
   notice,
 }: {
   mode: AuthMode;
   configured: boolean;
+  offer?: AuditOfferId;
   next?: string;
   notice?: string;
 }) {
@@ -98,6 +110,7 @@ export function AuthForm({
   const [result, setResult] = useState<AuthResult>({});
   const [resending, setResending] = useState(false);
   const content = formContent[locale][mode];
+  const selectedOffer = offer && getOffers(locale).find((item) => item.id === offer);
 
   async function send(body: unknown): Promise<AuthResult> {
     const response = await fetch('/api/auth', {
@@ -117,10 +130,10 @@ export function AuthForm({
     if (busy || !hydrated || !configured) return;
     const input =
       mode === 'signup'
-        ? { action: mode, ...values }
+        ? { action: mode, ...values, ...(offer ? { offer } : {}) }
         : mode === 'login'
           ? { action: mode, email: values.email.trim(), password: values.password, next }
-          : mode === 'forgot'
+          : mode === 'forgot' || mode === 'resend'
             ? { action: mode, email: values.email.trim() }
             : { action: mode, password: values.password, confirmPassword: values.confirmPassword };
     if ('email' in input && typeof input.email === 'string') input.email = input.email.trim();
@@ -242,6 +255,14 @@ export function AuthForm({
     <div className={styles.formContent}>
       <h1>{content.title}</h1>
       <p className={styles.description}>{content.description}</p>
+      {selectedOffer && (
+        <p className={styles.setup}>
+          {copy(
+            `Offre choisie : ${selectedOffer.name}. Après confirmation de votre email, vous pourrez adapter votre première demande.`,
+            `Selected offer: ${selectedOffer.name}. After confirming your email, you can edit your first audit request.`,
+          )}
+        </p>
+      )}
       {!configured && (
         <p className={styles.setup} role="status">
           {copy(
@@ -250,7 +271,18 @@ export function AuthForm({
           )}
         </p>
       )}
-      {notice && notices[notice] && (
+      {notice === 'invalid-link' && (
+        <div className={styles.linkHelp} role="status">
+          <p>{copy('Ce lien est invalide ou a expiré.', 'This link is invalid or has expired.')}</p>
+          <Link href="/resend-confirmation">
+            {copy('Renvoyer la confirmation du compte', 'Resend account confirmation')}
+          </Link>
+          <Link href="/forgot-password">
+            {copy('Demander un lien de réinitialisation', 'Request a password reset link')}
+          </Link>
+        </div>
+      )}
+      {notice && notice !== 'invalid-link' && notices[notice] && (
         <p className={styles.status} role="status">
           {copy(...notices[notice])}
         </p>
@@ -316,6 +348,7 @@ export function AuthForm({
               'email',
             )}
           {mode !== 'forgot' &&
+            mode !== 'resend' &&
             field(
               'password',
               mode === 'reset'
@@ -365,7 +398,11 @@ export function AuthForm({
         ) : mode === 'signup' ? (
           <>
             {copy('Déjà un compte ?', 'Already have an account?')}{' '}
-            <Link href="/login">{copy('Se connecter', 'Sign in')}</Link>
+            <Link
+              href={offer ? `/login?next=${encodeURIComponent(offerRequestPath(offer))}` : '/login'}
+            >
+              {copy('Se connecter', 'Sign in')}
+            </Link>
           </>
         ) : (
           <Link href="/login">{copy('Retour à la connexion', 'Back to sign in')}</Link>

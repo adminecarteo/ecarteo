@@ -14,6 +14,8 @@ import {
 import { CRITERIA } from '@/domain/reference';
 import { scoreOf, levelOf } from '@/domain/commands';
 import { formatDate } from '@/lib/i18n';
+import type { ClientDashboardSummary } from '@/lib/workspace-query';
+import styles from './dashboard.module.css';
 export default function Dashboard() {
   const { state, actor, locale, t, tx, clientFilter, navigate, summary } = useConsole();
   const [page, setPage] = useState(1);
@@ -66,95 +68,130 @@ export default function Dashboard() {
     v: score,
   }));
   const activePage = Math.min(page, Math.max(1, Math.ceil(done.length / 6)));
-  return (
-    <>
-      <PageHeader
-        eyebrow={t(actor.role === 'client' ? 'dashEyebrowClient' : 'dashEyebrow')}
-        title={
-          actor.role === 'client' ? (state.clients[0]?.name ?? t('dashTitle')) : t('dashTitle')
-        }
-        description={
-          actor.role === 'client'
-            ? tx({
-                fr: `Scores, tendances et actions de vos ${clients.reduce((total, client) => total + client.sites, 0)} établissement(s).`,
-                en: `Scores, trends and actions across your ${clients.reduce((total, client) => total + client.sites, 0)} location(s).`,
-              })
-            : t('dashSub')
-        }
-        actions={<ClientFilter />}
-      />
-      {actor.role === 'client' && !(summary?.completed ?? done.length) && (
-        <Card className="stack">
-          <h2>
-            {tx({
-              fr: 'Bienvenue dans votre espace Écartéo',
-              en: 'Welcome to your Écartéo workspace',
-            })}
-          </h2>
+  const isClient = actor.role === 'client';
+  // Older backend responses and embedded workspaces contain the visible report snapshots.
+  const clientDashboard = isClient
+    ? (summary?.clientDashboard ?? {
+        reports: done
+          .flatMap((mission) => {
+            const report = mission.reportSnapshot;
+            return report
+              ? [
+                  {
+                    missionId: mission.id,
+                    title: report.scenario.title,
+                    publishedAt: report.validatedAt,
+                    score: report.score,
+                  },
+                ]
+              : [];
+          })
+          .sort(
+            (a, b) =>
+              a.publishedAt.localeCompare(b.publishedAt) || a.missionId.localeCompare(b.missionId),
+          )
+          .slice(-12),
+        nextAction:
+          [...open].sort((a, b) => a.dueAt.localeCompare(b.dueAt) || a.id.localeCompare(b.id))[0] ??
+          null,
+      })
+    : null;
+  const header = (
+    <PageHeader
+      eyebrow={t(isClient ? 'dashEyebrowClient' : 'dashEyebrow')}
+      title={isClient ? (clients[0]?.name ?? t('dashTitle')) : t('dashTitle')}
+      description={
+        isClient
+          ? tx({
+              fr: 'Retrouvez vos rapports publiés et les actions à suivre.',
+              en: 'Find your published reports and the actions that need attention.',
+            })
+          : t('dashSub')
+      }
+      actions={<ClientFilter />}
+    />
+  );
+  if (clientDashboard && !clientDashboard.reports.length)
+    return (
+      <>
+        {header}
+        <Card className={styles.priority}>
+          <h2>{tx({ fr: 'Votre premier rapport', en: 'Your first report' })}</h2>
           <p>
             {tx({
-              fr: 'L’équipe Écartéo prépare et réalise vos audits. Dès la validation qualité, vous retrouverez ici vos rapports, vos preuves et votre plan d’amélioration.',
-              en: 'The Écartéo team plans and carries out your audits. Once quality review is complete, your reports, evidence and improvement plan will appear here.',
+              fr: 'Votre score et votre plan d’action apparaîtront ici après la publication du premier audit. Vous pouvez dès maintenant envoyer une demande ou suivre sa préparation.',
+              en: 'Your score and action plan will appear here when your first audit is published. You can request an audit or track a request you have already sent.',
             })}
           </p>
-          <div>
+          <div className={styles.links}>
             <Link className="btn primary" href="/app/requests">
-              {locale === 'fr' ? 'Demander un audit' : 'Request an audit'}
-            </Link>{' '}
-            <Link className="btn primary" href="/offres">
+              {tx({ fr: 'Accéder aux demandes d’audit', en: 'Go to audit requests' })}
+            </Link>
+            <Link className="btn" href="/offres">
               {tx({ fr: 'Découvrir les offres d’audit', en: 'Explore audit services' })}
             </Link>
           </div>
         </Card>
+      </>
+    );
+  return (
+    <>
+      {header}
+      {clientDashboard && <ClientPriorities dashboard={clientDashboard} />}
+      {!isClient && (
+        <div className="grid g4">
+          <Card className="kpi">
+            <span className="l">{t('kpiAvg')}</span>
+            <span className="v">
+              {average ?? '—'} <small className="stat-suffix">/100</small>
+            </span>
+            <span className="s">
+              <ScoreBadge score={average} />
+            </span>
+          </Card>
+          <Card className="kpi">
+            <span className="l">{t('kpiDone')}</span>
+            <span className="v">{summary?.completed ?? done.length}</span>
+            <span className="s">{t('kpiInProg', inProgress)}</span>
+          </Card>
+          <Card className="kpi">
+            <span className="l">{t('kpiOpen')}</span>
+            <span className="v">{summary?.openActions ?? open.length}</span>
+            <span className="s">
+              {t(
+                'kpiOpenSub',
+                summary?.urgentActions ?? open.filter((a) => a.horizon === 7).length,
+                summary?.completedActions ?? actions.length - open.length,
+              )}
+            </span>
+          </Card>
+          <Card className="kpi">
+            <span className="l">{t('kpiProd')}</span>
+            <span className="v">
+              {hours.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-GB', {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })}{' '}
+              h
+            </span>
+            <span className="s">{t('target5h')}</span>
+          </Card>
+        </div>
       )}
-      <div className="grid g4">
-        <Card className="kpi">
-          <span className="l">{t('kpiAvg')}</span>
-          <span className="v">
-            {average ?? '—'} <small className="stat-suffix">/100</small>
-          </span>
-          <span className="s">
-            <ScoreBadge score={average} />
-          </span>
-        </Card>
-        <Card className="kpi">
-          <span className="l">{t('kpiDone')}</span>
-          <span className="v">{summary?.completed ?? done.length}</span>
-          <span className="s">{t('kpiInProg', inProgress)}</span>
-        </Card>
-        <Card className="kpi">
-          <span className="l">{t('kpiOpen')}</span>
-          <span className="v">{summary?.openActions ?? open.length}</span>
-          <span className="s">
-            {t(
-              'kpiOpenSub',
-              summary?.urgentActions ?? open.filter((a) => a.horizon === 7).length,
-              summary?.completedActions ?? actions.length - open.length,
-            )}
-          </span>
-        </Card>
-        <Card className="kpi">
-          <span className="l">{t('kpiProd')}</span>
-          <span className="v">
-            {hours.toLocaleString(locale === 'fr' ? 'fr-FR' : 'en-GB', {
-              minimumFractionDigits: 1,
-              maximumFractionDigits: 1,
-            })}{' '}
-            h
-          </span>
-          <span className="s">{t('target5h')}</span>
-        </Card>
-      </div>
       <div className="grid g32">
-        <Card>
-          <div className="ch">
-            <h2>{t('chartTitle')}</h2>
-            <span className="muted chart-alt">{t('chartBands')}</span>
-          </div>
-          <div className="chart">
-            <TrendChart points={points} />
-          </div>
-        </Card>
+        {clientDashboard ? (
+          <ClientTrend reports={clientDashboard.reports} />
+        ) : (
+          <Card>
+            <div className="ch">
+              <h2>{t('chartTitle')}</h2>
+              <span className="muted chart-alt">{t('chartBands')}</span>
+            </div>
+            <div className="chart">
+              <TrendChart points={points} />
+            </div>
+          </Card>
+        )}
         <Card>
           <h2>{t('byCrit')}</h2>
           <div className="bars">
@@ -246,7 +283,103 @@ export default function Dashboard() {
     </>
   );
 }
-function TrendChart({ points }: { points: { label: string; v: number }[] }) {
+function ClientPriorities({ dashboard }: { dashboard: ClientDashboardSummary }) {
+  const { tx, locale, t } = useConsole();
+  const { nextAction, reports } = dashboard;
+  const latest = reports[reports.length - 1];
+  return (
+    <div className="grid g2">
+      <Card className={styles.priority}>
+        <h2>{tx({ fr: 'Dernier rapport publié', en: 'Latest published report' })}</h2>
+        <p className={styles.subject}>{tx(latest.title)}</p>
+        <p className="muted">
+          {formatDate(latest.publishedAt, locale)} · <strong>{latest.score}/100</strong>
+        </p>
+        <Link
+          className="btn primary"
+          href={`/app?view=rapport&id=${encodeURIComponent(latest.missionId)}`}
+        >
+          {tx({ fr: 'Lire le rapport', en: 'Read report' })}
+        </Link>
+      </Card>
+      <Card className={styles.priority}>
+        <h2>{tx({ fr: 'Prochaine action à traiter', en: 'Next action due' })}</h2>
+        {nextAction ? (
+          <>
+            <p className={styles.subject}>{tx(nextAction.text)}</p>
+            <p className="muted">
+              {tx({ fr: 'Échéance', en: 'Due' })}{' '}
+              <time dateTime={nextAction.dueAt}>{formatDate(nextAction.dueAt, locale)}</time> ·{' '}
+              {tx(nextAction.owner) || t('ownerTbd')}
+            </p>
+            <Link
+              className="btn"
+              href={`/app?view=rapport&id=${encodeURIComponent(nextAction.missionId)}#action-${encodeURIComponent(nextAction.id)}`}
+            >
+              {tx({ fr: 'Ouvrir l’action', en: 'Open action' })}
+            </Link>
+          </>
+        ) : (
+          <p>
+            {tx({
+              fr: 'Vous n’avez aucune action en attente.',
+              en: 'You have no outstanding actions.',
+            })}
+          </p>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function ClientTrend({ reports }: { reports: ClientDashboardSummary['reports'] }) {
+  const { locale, tx } = useConsole();
+  const title = tx({ fr: 'Scores des audits publiés', en: 'Published audit scores' });
+  const shortDate = new Intl.DateTimeFormat(locale === 'fr' ? 'fr-FR' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'Europe/Paris',
+  });
+  if (reports.length === 1)
+    return (
+      <Card>
+        <h2>{title}</h2>
+        <p>
+          {tx({
+            fr: `Votre premier audit obtient ${reports[0].score}/100. Le prochain rapport publié permettra de comparer les deux scores.`,
+            en: `Your first audit scored ${reports[0].score}/100. When your next report is published, you can compare the two scores.`,
+          })}
+        </p>
+      </Card>
+    );
+  const points = reports.map((report) => ({
+    label: shortDate.format(new Date(report.publishedAt)),
+    v: report.score,
+    detail: `${tx(report.title)} · ${formatDate(report.publishedAt, locale)} · ${report.score}/100`,
+  }));
+  return (
+    <Card>
+      <h2>{title}</h2>
+      <p className="muted">
+        {tx({
+          fr: `Scores de vos ${reports.length} derniers rapports, par ordre de publication.`,
+          en: `Scores from your last ${reports.length} reports, in publication order.`,
+        })}
+      </p>
+      <div className="chart">
+        <TrendChart points={points} label={title} />
+      </div>
+    </Card>
+  );
+}
+
+function TrendChart({
+  points,
+  label,
+}: {
+  points: { label: string; v: number; detail?: string }[];
+  label?: string;
+}) {
   const { t } = useConsole();
   const svg = useRef<SVGSVGElement>(null);
   const [W, setWidth] = useState(640);
@@ -277,8 +410,16 @@ function TrendChart({ points }: { points: { label: string; v: number }[] }) {
   );
   return (
     <>
-      <svg ref={svg} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('chartAria')}>
-        <title>{points.map((p) => `${p.label}: ${p.v}/100`).join(', ')}</title>
+      <svg
+        ref={svg}
+        viewBox={`0 0 ${W} ${H}`}
+        role="img"
+        aria-label={label ?? t('chartAria')}
+        aria-describedby="score-trend-values"
+      >
+        <desc id="score-trend-values">
+          {points.map((p) => p.detail ?? `${p.label}: ${p.v}/100`).join(', ')}
+        </desc>
         {[
           { top: 100, bottom: 80, level: 'ok' },
           { top: 80, bottom: 60, level: 'warn' },
@@ -304,7 +445,7 @@ function TrendChart({ points }: { points: { label: string; v: number }[] }) {
         <path className="area" d={`${path} L${x(points.length - 1)} ${y(0)} L${x(0)} ${y(0)} Z`} />
         <path className="ln" d={path} />
         {points.map((p, i) => (
-          <g key={p.label}>
+          <g key={i}>
             <circle
               className={`pt ${i === points.length - 1 ? 'end' : ''}`}
               cx={x(i)}

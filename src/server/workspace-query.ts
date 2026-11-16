@@ -2,7 +2,13 @@ import 'server-only';
 import { z } from 'zod';
 import type { Transaction } from './database';
 import { WorkspaceError } from './workspace-errors';
-import type { WorkspaceQuery, WorkspacePage, WorkspaceSummary } from '@/lib/workspace-query';
+import type {
+  ClientDashboardSummary,
+  WorkspaceQuery,
+  WorkspacePage,
+  WorkspaceSummary,
+} from '@/lib/workspace-query';
+import type { Localized } from '@/domain/types';
 
 export interface WorkspaceSelection {
   missionIds: string[];
@@ -99,6 +105,38 @@ export async function selectWorkspacePage(
 }
 
 /** Aggregate only records visible through RLS, independently of the current list page. */
+export async function clientDashboardSummary(
+  tx: Transaction,
+  tenant: string,
+): Promise<ClientDashboardSummary> {
+  const [reports, actions] = await Promise.all([
+    tx`select mission_id, snapshot->'scenario'->'title' as title, published_at, score
+       from public.published_reports where client_id=${tenant}
+       order by published_at desc,mission_id desc limit 12`,
+    tx`select a.id,a.mission_id,a.content,a.owner_label,a.due_at
+       from public.actions a join public.published_reports r on r.mission_id=a.mission_id and r.client_id=a.client_id
+       where a.client_id=${tenant} and not a.done order by a.due_at,a.id limit 1`,
+  ]);
+  const action = actions[0];
+  return {
+    reports: reports.reverse().map((row) => ({
+      missionId: String(row.mission_id),
+      title: row.title as Localized,
+      publishedAt: new Date(row.published_at).toISOString(),
+      score: Number(row.score),
+    })),
+    nextAction: action
+      ? {
+          id: String(action.id),
+          missionId: String(action.mission_id),
+          text: action.content as Localized,
+          owner: action.owner_label as Localized,
+          dueAt: new Date(action.due_at).toISOString(),
+        }
+      : null,
+  };
+}
+
 export async function summarizeWorkspace(
   tx: Transaction,
   client?: string,

@@ -1,5 +1,6 @@
 import { createAuthClient } from '@/server/auth';
 import { siteOrigin } from '@/server/config';
+import { confirmedSignupPath } from '@/lib/audit-offer';
 import { privateHeaders } from '@/server/http';
 
 export async function GET(request: Request) {
@@ -14,8 +15,12 @@ export async function GET(request: Request) {
       (type === 'signup' || type === 'recovery' || type === 'email')
     ) {
       const client = await createAuthClient();
-      const { error } = await client.auth.verifyOtp({ token_hash: tokenHash, type });
-      if (!error) destination = type === 'recovery' ? '/reset-password' : '/app';
+      const { data, error } = await client.auth.verifyOtp({ token_hash: tokenHash, type });
+      if (!error)
+        destination =
+          type === 'recovery'
+            ? '/reset-password'
+            : confirmedSignupPath(data.user?.user_metadata?.audit_offer);
     }
   } catch {
     /* No token/provider diagnostics belong in the redirect. */

@@ -1,0 +1,107 @@
+.fieldTimer,
+.handoff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.fieldTimer {
+  padding: 10px 16px;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.timerLabel,
+.elapsed {
+  display: block;
+}
+
+.timerLabel,
+.target,
+.briefFacts dt {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.elapsed {
+  font: 600 1.375rem/1.15 var(--f-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.briefFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 20px;
+  margin: 12px 0;
+}
+
+.briefFacts dd {
+  margin: 2px 0 0;
+}
+
+.briefFacts dd,
+.limits p {
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.target,
+.handoff p {
+  margin-top: 6px;
+}
+
+@media (max-width: 680px) {
+  .briefFacts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fieldWork :global(.opstep .tick) {
+    position: relative;
+    isolation: isolate;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+  }
+
+  .fieldWork :global(.opstep .tick)::before {
+    position: absolute;
+    inset: 7px;
+    z-index: -1;
+    content: '';
+    border: 2px solid var(--accent);
+    border-radius: 7px;
+    background: var(--surface);
+  }
+
+  .fieldWork :global(.opstep.done .tick)::before {
+    border-color: var(--signal);
+    background: var(--signal);
+  }
+}
+
+@media (max-width: 680px) and (min-height: 650px) {
+  .activeTimer {
+    position: sticky;
+    top: calc(max(6px, env(safe-area-inset-top, 0px)) + 76px);
+    z-index: 5;
+  }
+
+  .activeTimer::before {
+    position: absolute;
+    inset: -9px 0 auto;
+    height: 8px;
+    content: '';
+    pointer-events: none;
+    background: var(--bg);
+  }
+
+  :global(html):has(.activeTimer) {
+    scroll-padding-top: calc(max(6px, env(safe-area-inset-top, 0px)) + 160px);
+  }
+}

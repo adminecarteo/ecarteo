@@ -8,6 +8,7 @@ import { PortalFailure } from '@/components/portal/portal-failure';
 import { PortalShell } from '@/components/portal/portal-shell';
 import { RequestsPanel } from '@/components/portal/requests-panel';
 import { isFrontendDeployment } from '@/lib/deployment-target';
+import { auditOfferId, offerRequestPath } from '@/lib/audit-offer';
 import { FrontendRequests } from '@/components/frontend-bootstrap';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata(): Promise<Metadata> {
@@ -17,8 +18,13 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: { index: false, follow: false },
   };
 }
-export default async function RequestsPage() {
-  if (isFrontendDeployment()) return <FrontendRequests />;
+export default async function RequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const offer = auditOfferId((await searchParams).offer);
+  if (isFrontendDeployment()) return <FrontendRequests offer={offer} />;
   const locale = await getRequestLocale();
   const copy = (fr: string, en: string) => (locale === 'fr' ? fr : en);
   let account, data;
@@ -27,7 +33,9 @@ export default async function RequestsPage() {
     data = await listRequests(account.user.id, {});
   } catch (error) {
     if (error instanceof AppError && error.status === 401)
-      redirect('/login?next=%2Fapp%2Frequests');
+      redirect(
+        `/login?next=${encodeURIComponent(offer ? offerRequestPath(offer) : '/app/requests')}`,
+      );
     return <PortalFailure error={error} />;
   }
   const quality = account.profile.role === 'qualite';
@@ -47,7 +55,7 @@ export default async function RequestsPage() {
       }
       quality={quality}
     >
-      <RequestsPanel initial={data} quality={quality} />
+      <RequestsPanel initial={data} quality={quality} offer={offer} />
     </PortalShell>
   );
 }

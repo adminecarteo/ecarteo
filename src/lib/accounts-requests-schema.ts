@@ -1,3 +1,4 @@
+import type { AuditOfferId } from './audit-offer';
 import { z } from 'zod';
 
 export const invitationSchema = z
@@ -110,6 +111,7 @@ export interface AuditRequestRecord {
   createdAt: string;
 }
 export interface RequestPage {
+  suggestedOffer?: AuditOfferId;
   items: AuditRequestRecord[];
   total: number;
   page: number;

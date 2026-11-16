@@ -1,8 +1,10 @@
+import { PublisherInformation } from '@/components/publisher-information';
 import type { Metadata } from 'next';
 import { getRequestLocale } from '@/server/locale';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthForm } from '@/components/auth/auth-form';
 import { authConfigured } from '@/server/config';
+import { auditOfferId } from '@/lib/audit-offer';
 import { safeNext } from '@/lib/auth-schema';
 
 export const dynamic = 'force-dynamic';
@@ -26,10 +28,12 @@ export default async function Page({
     <AuthShell>
       <AuthForm
         mode="signup"
+        offer={auditOfferId(params.offer)}
         configured={authConfigured()}
         next={safeNext(typeof params.next === 'string' ? params.next : undefined)}
         notice={typeof params.notice === 'string' ? params.notice : undefined}
       />
+      <PublisherInformation />
     </AuthShell>
   );
 }

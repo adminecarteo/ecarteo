@@ -1,3 +1,4 @@
+import { PublisherInformation } from '@/components/publisher-information';
 import type { Metadata } from 'next';
 import { MethodPageContent } from '@/components/marketing/pages';
 import { getRequestLocale } from '@/server/locale';
@@ -13,5 +14,5 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 export default function Page() {
-  return <MethodPageContent />;
+  return <MethodPageContent publisher={<PublisherInformation />} />;
 }

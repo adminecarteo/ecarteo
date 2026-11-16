@@ -1,0 +1,17 @@
+.information {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  padding: 0.85rem 1rem;
+  color: #46516a;
+  background: #f5f8fb;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.information a {
+  padding-block: 0.3rem;
+  color: #242e65;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { CorrectiveAction, Localized } from '@/domain/types';
 
 export const workspaceQuerySchema = z.object({
   cursor: z.string().max(500).optional(),
@@ -37,6 +38,12 @@ export interface WorkspaceSummary {
   averageHours: number;
   months: { month: string; score: number }[];
   criteria: Record<string, number | null>;
+  clientDashboard?: ClientDashboardSummary;
+}
+export interface ClientDashboardSummary {
+  /** Up to twelve reports, oldest publication first. */
+  reports: { missionId: string; title: Localized; publishedAt: string; score: number }[];
+  nextAction: Pick<CorrectiveAction, 'id' | 'missionId' | 'text' | 'owner' | 'dueAt'> | null;
 }
 export function workspaceQueryParams(params: URLSearchParams): WorkspaceQueryInput {
   const input: Record<string, string> = {};

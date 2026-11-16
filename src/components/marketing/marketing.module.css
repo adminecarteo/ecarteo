@@ -259,6 +259,22 @@
   font-weight: 600;
 }
 
+.preview figcaption span,
+.preview figcaption strong {
+  display: block;
+}
+
+.preview figcaption span {
+  color: var(--marketing-muted);
+}
+
+.preview figcaption strong {
+  margin-top: 3px;
+  font-size: 19px;
+  line-height: 1.25;
+  letter-spacing: -0.4px;
+}
+
 .preview ol {
   list-style: none;
   display: flex;

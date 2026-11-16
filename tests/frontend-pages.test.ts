@@ -53,7 +53,7 @@ describe('frontend deployment page boundary', () => {
         searchParams: Promise.resolve({ view: 'rapport', id: 'mission', q: 'hotel' }),
       }),
       TeamPage(),
-      RequestsPage(),
+      RequestsPage({ searchParams: Promise.resolve({}) }),
       BillingPage({ searchParams: Promise.resolve({ checkout: 'returned' }) }),
       JoinPage(),
       ResetPage({ searchParams: Promise.resolve({ next: '/app', notice: 'ready' }) }),

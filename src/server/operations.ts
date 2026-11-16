@@ -4,16 +4,22 @@ import { createClient } from '@supabase/supabase-js';
 import { database } from './database';
 import { authConfigured, siteOrigin } from './config';
 
-export function authorizedMonitor(header: string | null): boolean {
-  const expected = process.env.OPS_HEALTH_TOKEN;
+function validBearer(header: string | null, expected?: string): boolean {
   if (!expected || expected.length < 32 || !header?.startsWith('Bearer ')) return false;
   const hash = (value: string) => createHash('sha256').update(value).digest();
   return timingSafeEqual(hash(header.slice(7)), hash(expected));
 }
+export function authorizedMonitor(header: string | null): boolean {
+  return validBearer(header, process.env.OPS_HEALTH_TOKEN);
+}
+export function authorizedCleanup(header: string | null): boolean {
+  const token = process.env.OPS_CLEANUP_TOKEN;
+  return token !== process.env.OPS_HEALTH_TOKEN && validBearer(header, token);
+}
 
 /** Never include exception text, URLs, tokens, request data, or evidence in operations logs. */
 export function operationalEvent(
-  event: 'request_failed' | 'readiness_failed',
+  event: 'request_failed' | 'readiness_failed' | 'staged_cleanup_failed',
   fields: { category?: string; route?: string; requestId?: string } = {},
 ) {
   console.error(JSON.stringify({ level: 'error', event, at: new Date().toISOString(), ...fields }));

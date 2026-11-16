@@ -1,0 +1,22 @@
+[Unit]
+Description=Create and verify an encrypted Ecarteo database and evidence backup
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=/mnt/ecarteo-backups
+
+[Service]
+Type=oneshot
+User=ecarteo-backup
+WorkingDirectory=/opt/ecarteo
+EnvironmentFile=/etc/ecarteo/backup.env
+Environment=ECARTEO_BACKUP_DESTINATION=/mnt/ecarteo-backups
+Environment=ECARTEO_BACKUP_SCRATCH=/var/lib/ecarteo-backup
+ExecStart=/usr/bin/node /opt/ecarteo/scripts/scheduled-backup.mjs
+UMask=0077
+StateDirectory=ecarteo-backup
+StateDirectoryMode=0700
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/mnt/ecarteo-backups

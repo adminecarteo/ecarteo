@@ -56,12 +56,12 @@ export const authMessages = {
     'Email delivery is temporarily unavailable. Wait before trying again.',
   ],
   recoverySent: [
-    'Si un compte correspond à cette adresse, un lien de réinitialisation lui a été envoyé. Consultez aussi vos courriers indésirables.',
-    'If an account matches this address, a reset link has been sent. Check your spam folder too.',
+    'Si cette adresse correspond à un compte, vérifiez votre messagerie et vos courriers indésirables. Si le lien n’arrive pas, attendez quelques minutes avant de réessayer.',
+    'If this address matches an account, check your inbox and spam folder. If the link does not arrive, wait a few minutes before trying again.',
   ],
   confirmationSent: [
-    'Si cette adresse attend une confirmation, un nouvel email lui a été envoyé.',
-    'If this address is awaiting confirmation, a new email has been sent.',
+    'Si cette adresse attend une confirmation, vérifiez votre messagerie et vos courriers indésirables. Si le lien n’arrive pas, attendez quelques minutes avant de réessayer.',
+    'If this address is awaiting confirmation, check your inbox and spam folder. If the link does not arrive, wait a few minutes before trying again.',
   ],
   resetFailed: [
     'Le mot de passe n’a pas pu être modifié. Demandez un nouveau lien ou choisissez un autre mot de passe.',

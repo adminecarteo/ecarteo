@@ -1,4 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { createSeedState } from '../../src/domain/seed';
+import { scopedState } from '../../src/domain/commands';
+import type { Actor } from '../../src/domain/types';
+import type { WorkspaceSummary } from '../../src/lib/workspace-query';
 import type { BillingOverview } from '../../src/lib/billing-types';
 import type { RequestPage } from '../../src/lib/accounts-requests-schema';
 
@@ -164,4 +168,129 @@ test('a delayed bootstrap response cannot restore protected billing after a sign
   await expect(expired).toBeVisible();
   await expect(page.getByText('Private account B', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Actualiser', exact: true })).toHaveCount(0);
+});
+
+for (const locale of ['en', 'fr'] as const) {
+  test(`client dashboard shows actionable priorities and meaningful score history in ${locale}`, async ({
+    page,
+    context,
+    baseURL,
+  }, testInfo) => {
+    const en = locale === 'en';
+    await context.addCookies([{ name: 'ecarteo-locale', value: locale, url: baseURL! }]);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const actor: Actor = { id: 'client-fixture', name: 'Client', role: 'client', clientId: 'c1' };
+    const state = scopedState(createSeedState(), actor);
+    const action = state.actions.find((item) => !item.done)!;
+    const published = state.missions.filter((item) => item.reportSnapshot).slice(0, 2);
+    const reports = published.map((mission, index) => ({
+      missionId: mission.id,
+      title: mission.scenarioSnapshot.title,
+      publishedAt: `2026-11-01T1${index}:00:00Z`,
+      score: mission.reportSnapshot!.score,
+    }));
+    const summary: WorkspaceSummary = {
+      completed: 0,
+      inProgress: 0,
+      openActions: 0,
+      urgentActions: 0,
+      completedActions: 0,
+      averageScore: null,
+      averageHours: 0,
+      months: [],
+      criteria: {},
+      clientDashboard: { reports: [], nextAction: null },
+    };
+    const overview = summary.clientDashboard!;
+    await page.route('**/api/workspace*', (route) =>
+      route.fulfill({
+        json: {
+          state: overview.reports.length
+            ? state
+            : { ...state, missions: [], actions: [], scenarios: [], evidence: [] },
+          actor,
+          operators: [],
+          summary,
+        },
+      }),
+    );
+    await page.route('**/api/reports/*/addenda', (route) =>
+      route.fulfill({ json: { addenda: [] } }),
+    );
+    await page.goto('/');
+    const preview = page.getByRole('figure', {
+      name: en ? /Booking an accessible room/ : /Réserver une chambre accessible/,
+    });
+    await expect(preview).toContainText(en ? 'three hours' : 'trois heures');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+
+    await page.goto('/app');
+    await expect(
+      page.getByRole('link', {
+        name: en ? 'Go to audit requests' : 'Accéder aux demandes d’audit',
+      }),
+    ).toBeInViewport();
+    await expect(page.getByText(en ? 'Average production time' : 'Production moyenne')).toHaveCount(
+      0,
+    );
+    const chart = page.getByRole('img', {
+      name: en ? 'Published audit scores' : 'Scores des audits publiés',
+    });
+    await expect(chart).toHaveCount(0);
+
+    overview.reports = [reports[0]];
+    summary.completed = 1;
+    await page.reload();
+    await expect(
+      page.getByText(en ? /Your first audit scored/ : /Votre premier audit obtient/),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        en ? 'You have no outstanding actions.' : 'Vous n’avez aucune action en attente.',
+      ),
+    ).toBeVisible();
+    await expect(chart).toHaveCount(0);
+
+    overview.reports = reports;
+    overview.nextAction = action;
+    summary.completed = 2;
+    await page.reload();
+    const reportLink = page.getByRole('link', { name: en ? 'Read report' : 'Lire le rapport' });
+    const actionLink = page.getByRole('link', { name: en ? 'Open action' : 'Ouvrir l’action' });
+    await expect(reportLink).toHaveAttribute(
+      'href',
+      '/app?view=rapport&id=' + reports[1].missionId,
+    );
+    await expect(reportLink).toBeInViewport();
+    await expect(actionLink).toBeInViewport();
+    await expect(chart).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    await page.screenshot({
+      path: testInfo.outputPath('client-dashboard-mobile-' + locale + '.png'),
+    });
+    await actionLink.click();
+    await expect(
+      page.getByRole('checkbox').and(page.locator('#action-' + action.id)),
+    ).toBeFocused();
+  });
+}
+
+test('staff retain their operational views on desktop', async ({ page, context, baseURL }) => {
+  await context.addCookies([{ name: 'ecarteo-locale', value: 'en', url: baseURL! }]);
+  let actor: Actor = { id: 'quality-fixture', name: 'Quality', role: 'qualite' };
+  const state = createSeedState();
+  await page.route('**/api/workspace*', (route) =>
+    route.fulfill({ json: { state: scopedState(state, actor), actor, operators: [] } }),
+  );
+  await page.goto('/app');
+  await expect(page.getByText('Average production time')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Latest published report' })).toHaveCount(0);
+  actor = { id: 'operator-fixture', name: 'Operator', role: 'operateur' };
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1, name: 'Missions' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Latest published report' })).toHaveCount(0);
 });

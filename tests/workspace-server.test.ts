@@ -4,6 +4,10 @@ import { randomUUID } from 'node:crypto';
 import type { Command, ScenarioDraft } from '@/domain/types';
 import { CRITERIA } from '@/domain/reference';
 import { scoringFingerprint } from '@/domain/commands';
+import {
+  countExpiredStagedUploads,
+  removeExpiredStagedUploads,
+} from '../scripts/lib/expired-staged-uploads.mjs';
 
 vi.mock('server-only', () => ({}));
 const objects = vi.hoisted(() => new Map<string, Uint8Array>());
@@ -238,6 +242,53 @@ describe
       );
       await deleteStagedAttachment(account(ids.operatorA), staged.fileId);
       expect([...objects.keys()].some((key) => key.endsWith(staged.fileId))).toBe(false);
+    });
+    it('removes only expired unlinked uploads, preserving locked, linked and failed reservations', async () => {
+      const stage = (name: string) =>
+        uploadAttachment(
+          account(ids.operatorA),
+          missionId,
+          new File([name], name + '.txt', { type: 'text/plain' }),
+        );
+      const expired = await stage('expired-cleanup-fixture');
+      const live = await stage('live-cleanup-fixture');
+      const [linked] =
+        await db`select * from public.evidence where mission_id=${missionId} and object_path is not null limit 1`;
+      // Simulate an inconsistent duplicate reservation left alongside committed evidence.
+      await db`insert into app_private.staged_attachments(id,client_id,mission_id,owner_id,object_path,filename,mime_type,size_bytes,sha256,created_at)
+        select id,client_id,mission_id,uploaded_by,object_path,filename,mime_type,size_bytes,sha256,now()-interval '25 hours' from public.evidence where id=${linked.id}`;
+      await db`update app_private.staged_attachments set created_at=now()-interval '25 hours' where id=${expired.fileId}`;
+      const path = ids.tenantA + '/' + missionId + '/' + expired.fileId;
+      try {
+        expect(await countExpiredStagedUploads(db)).toBe(1);
+        await expect(
+          removeExpiredStagedUploads(db, async (paths) => {
+            expect(paths).toEqual([path]);
+            throw Error('Storage unavailable');
+          }),
+        ).rejects.toThrow('Storage unavailable');
+        expect(await countExpiredStagedUploads(db)).toBe(1);
+        const [first, concurrent] = await db.begin(async (tx) => {
+          await tx`select id from app_private.staged_attachments where id=${expired.fileId} for update`;
+          const remove = vi.fn(async () => {});
+          const skipped = await removeExpiredStagedUploads(db, remove);
+          return [skipped, remove.mock.calls.length];
+        });
+        expect([first, concurrent]).toEqual([0, 0]);
+        const remove = vi.fn(async (paths: string[]) => {
+          expect(paths).toEqual([path]);
+          paths.forEach((item) => objects.delete(item));
+        });
+        expect(await removeExpiredStagedUploads(db, remove)).toBe(1);
+        expect(await removeExpiredStagedUploads(db, remove)).toBe(0);
+        expect(remove).toHaveBeenCalledTimes(1);
+        expect(objects.has(linked.object_path)).toBe(true);
+        expect(
+          await db`select id from app_private.staged_attachments where id=any(${[live.fileId, linked.id]}::uuid[])`,
+        ).toHaveLength(2);
+      } finally {
+        await db`delete from app_private.staged_attachments where id=any(${[expired.fileId, live.fileId, linked.id]}::uuid[])`;
+      }
     });
     it('retains incomplete and excluded action drafts across fresh reads for quality only and rejects stale reviewers', async () => {
       await run({ type: 'mission.submit', id: missionId }, ids.operatorA);

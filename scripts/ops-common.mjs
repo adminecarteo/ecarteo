@@ -52,6 +52,17 @@ export function requireMaintenanceWindow() {
     );
 }
 
+export function backupSnapshot() {
+  const id = option('--snapshot');
+  if (!id) {
+    requireMaintenanceWindow();
+    return null;
+  }
+  // pg_dump can import this ID only while its exporting transaction is open.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{8}-[0-9]+$/i.test(id)) throw new Error('Invalid snapshot');
+  return id;
+}
+
 export function safeFailure() {
   // Provider exceptions may contain connection URLs, object identifiers, or credentials.
   console.error(

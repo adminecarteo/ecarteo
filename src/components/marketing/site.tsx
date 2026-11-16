@@ -45,9 +45,11 @@ export function ActionLink({
 }
 
 export function MarketingShell({
+  publisher,
   current,
   children,
 }: {
+  publisher?: ReactNode;
   current?: 'methode' | 'offres';
   children: ReactNode;
 }) {
@@ -121,6 +123,7 @@ export function MarketingShell({
           {children}
         </main>
         <FinalCallout />
+        {publisher}
       </div>
     </div>
   );
@@ -184,39 +187,40 @@ export function AuditPreview() {
       kind: 'observation',
       title: copy('Observation', 'Observation'),
       text: copy(
-        'Un point de friction est identifié sur le parcours.',
-        'A point of friction is identified in the journey.',
+        'Un prospect demande une chambre accessible via le formulaire de l’hôtel. Après deux jours, il attend toujours une réponse.',
+        'A guest asks for an accessible room through the hotel form. Two days later, they are still waiting for a reply.',
       ),
     },
     {
       kind: 'preuve',
       title: copy('Preuve', 'Evidence'),
       text: copy(
-        'Capture et description du constat : étape, contexte.',
-        'Capture and description of the finding: step and context.',
+        'L’accusé de réception horodaté et la boîte de test permettent de vérifier le délai.',
+        'The timestamped confirmation and the test inbox show how long the guest waited.',
       ),
     },
     {
       kind: 'action',
       title: copy('Action', 'Action'),
       text: copy(
-        'Mise en place d’une correction ciblée.',
-        'A targeted improvement is implemented.',
+        'La réception désigne une personne pour traiter chaque demande dans la journée.',
+        'Reception assigns each enquiry to someone responsible for replying that day.',
       ),
     },
     {
       kind: 'retest',
       title: copy('Retest', 'Retest'),
       text: copy(
-        'Vérification du parcours après correction.',
-        'The journey is checked again after the improvement.',
+        'Une nouvelle demande reçoit une réponse en trois heures, avec les équipements disponibles.',
+        'A repeat enquiry gets a reply in three hours with details of the accessible facilities.',
       ),
     },
   ] as const;
   return (
     <figure className={styles.preview} aria-labelledby="preview-caption">
       <figcaption id="preview-caption">
-        {copy('Exemple illustratif', 'Illustrative example')}
+        <span>{copy('Exemple illustratif', 'Illustrative example')}</span>
+        <strong>{copy('Réserver une chambre accessible', 'Booking an accessible room')}</strong>
       </figcaption>
       <ol>
         {rows.map((row) => (

@@ -26,6 +26,7 @@ import {
   type WorkspaceSummary,
 } from '@/lib/workspace-query';
 import {
+  clientDashboardSummary,
   selectWorkspacePage,
   summarizeWorkspace,
   decodeWorkspaceCursor,
@@ -269,6 +270,16 @@ export async function loadWorkspace(
     try {
       selected = await selectWorkspacePage(tx, query);
       summary = await summarizeWorkspace(tx, query.client);
+      if (
+        profile.role === 'client' &&
+        profile.client_id &&
+        (!query.view || query.view === 'tableau')
+      ) {
+        summary.clientDashboard = await clientDashboardSummary(
+          tx,
+          query.client ?? profile.client_id,
+        );
+      }
     } finally {
       await tx.unsafe('reset role');
     }

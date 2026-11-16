@@ -96,6 +96,14 @@ These cases exercise the real Auth/email provider and cannot be counted as passe
 
 The initial local provider run uncovered a native-form fallback: submitting before JavaScript hydration could use a GET query. Auth forms now use POST and keep submission disabled until hydration; the public browser suite includes a no-JavaScript regression check. Real local-provider browser checks passed after this fix. Hosted SMTP, HTTPS cookies and cloud deployment still require staging acceptance.
 
+To verify signup from an offer, email confirmation on a fresh browser, resending, password recovery and the first editable request, start the configured local app on port 3000 and run:
+
+```sh
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 ECARTEO_LOCAL_MAILPIT_E2E=1 node --env-file=.env.local ./node_modules/@playwright/test/cli.js test tests/e2e/offer-onboarding.spec.ts
+```
+
+The mail test requires Supabase on port 55321 and Mailpit on 55324. It creates a unique local test customer and request.
+
 ## Separate frontend and backend checks
 
 Run the two local application processes below against the prepared local Supabase workspace. The normal app on port 3000 can remain running. Each process uses a separate Next cache; do not run another frontend build or development server while `.next-frontend` is in use.

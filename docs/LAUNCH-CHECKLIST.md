@@ -16,13 +16,17 @@ A checked item needs evidence and an owner. Implemented code or a skipped test d
 - [x] Backup/checksum verification tooling, privacy case inventory/export and immutable report supplements.
 - [x] Detailed Supabase, deployment, billing, account workflow and operations instructions.
 
-## Owner actions before customer launch
+## Hosted release and owner sign-off
 
-- [ ] Create separate staging/production Supabase projects and record their regions/owners.
-- [ ] Set validated build/runtime configuration and protect service/database credentials.
-- [ ] Apply all six migrations; confirm RLS, private bucket and no conflicting policies.
+The [production handover](PRODUCTION-HANDOVER.md) records the two environments and the actions assigned to Intertrad.
+
+- [x] Create separate staging/production Supabase projects and record their regions/owners.
+- [x] Set separate production and staging build/runtime credentials.
+- [ ] Rotate the previously shared staging database password and verify Render reconnection.
+- [x] Apply all seven migrations, confirm application RLS and verify the production private evidence bucket and 10 MiB limit.
 - [ ] Configure SMTP, sender DNS, exact redirects and email confirmation/recovery templates.
-- [ ] Bootstrap the first verified quality administrator and nominate client administrators.
+- [x] Bootstrap and verify the first production quality administrator (`admin-dev@ecarteo.fr`).
+- [ ] Nominate customer administrators as real customers onboard.
 - [ ] Repeat signup/recovery/session/disabled-account and invite-replay acceptance against hosted staging with real SMTP delivery.
 - [ ] Repeat authenticated lifecycle E2E on hosted staging with two customers/operators and real upload/download/PDF bytes.
 - [ ] Test Stripe sandbox checkout, signed webhook retries, cancellation, portal invoices and failed payments if billing is enabled.
@@ -33,7 +37,8 @@ A checked item needs evidence and an owner. Implemented code or a skipped test d
 - [ ] Route private readiness/error/backup/cleanup alerts to named responders and test delivery.
 - [ ] Schedule expired staging cleanup and review orphan counts during maintenance.
 - [ ] Configure encrypted off-site database+file backups, retention and backup-age alerts.
-- [ ] Complete a real Supabase/database/file restore drill and record recovery targets/results.
+- [x] Restore a database, accounts, report and evidence into an isolated Supabase stack and verify actual sign-in, file bytes and tenant isolation.
+- [ ] Retrieve a production backup from the approved off-site destination and measure recovery time against Intertrad’s targets.
 - [ ] Approve company identity/contact, privacy notice, customer terms, retention/erasure/hold rules and customer communications.
 - [ ] Review mobile/keyboard/accessibility and test load for intended launch volume on target infrastructure.
 - [ ] Record launch decision, unresolved limitations and escalation owner.

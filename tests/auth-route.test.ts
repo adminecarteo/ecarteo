@@ -135,7 +135,14 @@ describe('authentication endpoint', () => {
       const absent = await POST(request(authInputs[action], undefined, 'en'));
       expect(success.status).toBe(200);
       expect(absent.status).toBe(200);
-      expect(await absent.json()).toEqual(await success.json());
+      const neutral = await success.json();
+      expect(await absent.json()).toEqual(neutral);
+      providerMethods[action].mockResolvedValueOnce({
+        error: { status: 429, code: 'over_email_send_rate_limit' },
+      });
+      const cooldown = await POST(request(authInputs[action], undefined, 'en'));
+      expect(cooldown.status).toBe(200);
+      expect(await cooldown.json()).toEqual(neutral);
     },
   );
   it('reports an uncertain password update without claiming success, rejection or revoking sessions', async () => {
@@ -211,7 +218,7 @@ describe('authentication endpoint', () => {
     );
     expect(await recovery.json()).toEqual({
       message:
-        'If an account matches this address, a reset link has been sent. Check your spam folder too.',
+        'If this address matches an account, check your inbox and spam folder. If the link does not arrive, wait a few minutes before trying again.',
     });
   });
   it('localizes partial password reset success while preserving the retry flag', async () => {
@@ -274,6 +281,19 @@ describe('authentication endpoint', () => {
       display_name: 'Camille Martin',
       company_name: 'Test Company',
     });
+  });
+  it('passes only allowlisted offer preferences and never accepts a privileged role or external destination as an offer', async () => {
+    mocks.signUp.mockResolvedValue({
+      data: { session: {}, user: { email_confirmed_at: '2026-11-16' } },
+      error: null,
+    });
+    const accepted = await POST(request({ ...authInputs.signup, offer: 'suivi' }));
+    expect(await accepted.json()).toEqual({ redirect: '/app/requests' });
+    expect(mocks.signUp.mock.calls[0][0].options.data.audit_offer).toBe('suivi');
+    for (const offer of ['qualite', 'https://example.test']) {
+      expect((await POST(request({ ...authInputs.signup, offer }))).status).toBe(400);
+    }
+    expect(mocks.signUp).toHaveBeenCalledTimes(1);
   });
   it('verifies a live session before password updates and revokes sessions afterward', async () => {
     mocks.requireUser.mockResolvedValue({ user: { id: 'user' } });
