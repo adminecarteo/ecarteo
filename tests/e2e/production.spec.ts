@@ -1,5 +1,19 @@
 import { expect, test } from '@playwright/test';
 
+test('auth link redirects suppress referrers while public pages keep the site policy', async ({
+  request,
+}) => {
+  for (const path of ['/auth/callback', '/auth/confirm']) {
+    const response = await request.get(path, { maxRedirects: 0 });
+    expect(response.status()).toBe(303);
+    expect(response.headers()['referrer-policy']).toBe('no-referrer');
+    expect(response.headers()['cache-control']).toContain('no-store');
+    expect(new URL(response.headers().location).pathname).toBe('/login');
+  }
+  const login = await request.get('/login');
+  expect(login.headers()['referrer-policy']).toBe('strict-origin-when-cross-origin');
+});
+
 test('account forms never submit credentials in a URL before JavaScript is ready', async ({
   browser,
   baseURL,

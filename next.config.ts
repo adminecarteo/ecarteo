@@ -47,6 +47,12 @@ const config: NextConfig = {
             ],
           }))
         : []),
+      // These redirects receive credentials in their query strings. Keep this
+      // rule after the site default so Next also omits the referrer on redirects.
+      {
+        source: '/auth/:action(callback|confirm)',
+        headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
+      },
     ];
   },
 };
