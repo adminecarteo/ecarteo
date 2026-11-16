@@ -107,7 +107,9 @@ async function readState(
       await Promise.all([
         tx`select id,name,site_count from public.clients where (${tenant}::uuid is null or id=${tenant}::uuid) order by name`,
         tx`select * from public.scenarios where (${tenant}::uuid is null or client_id=${tenant}::uuid) and (not ${limited} or id=any(${scenarioIds}::uuid[]) or id in(select scenario_id from public.missions where id=any(${missionIds}::uuid[]))) order by created_at,id`,
-        tx`select m.*,p.display_name as operator_name,v.display_name as validator_name from public.missions m
+        tx`select m.*,p.display_name as operator_name,v.display_name as validator_name,
+        d.revision as scoring_draft_revision,d.actions as scoring_draft_actions from public.missions m
+        left join app_private.scoring_action_drafts d on d.mission_id=m.id
         left join public.profiles p on p.id=m.operator_id left join public.profiles v on v.id=m.validated_by
         where (${tenant}::uuid is null or m.client_id=${tenant}::uuid) and (not ${limited} or m.id=any(${missionIds}::uuid[])) order by m.created_at,m.id`,
         tx`select * from public.published_reports where (${tenant}::uuid is null or client_id=${tenant}::uuid) and (not ${limited} or mission_id=any(${missionIds}::uuid[])) order by published_at,id`,
@@ -149,6 +151,14 @@ async function readState(
       steps: row.steps as Mission['steps'],
       scores: row.scores as Mission['scores'],
       comments: row.comments as Mission['comments'],
+      ...(row.scoring_draft_revision
+        ? {
+            scoringDraft: {
+              revision: Number(row.scoring_draft_revision),
+              actions: row.scoring_draft_actions as NonNullable<Mission['scoringDraft']>['actions'],
+            },
+          }
+        : {}),
       critical: Boolean(row.critical),
       validatedBy: row.validated_by
         ? String(snapshots.get(String(row.id))?.validatedBy || row.validator_name || 'Qualité')
@@ -366,6 +376,13 @@ async function persist(
     const old = before.missions.find((entry) => entry.id === mission.id);
     if (old && jsonChanged(old, mission)) {
       if (old.status === 'done') continue; // action state lives outside the immutable mission/report.
+      if (mission.scoringDraft && mission.scoringDraft.revision !== old.scoringDraft?.revision) {
+        await tx`insert into app_private.scoring_action_drafts(mission_id,revision,actions)
+          values(${mission.id},${mission.scoringDraft.revision},${tx.json(mission.scoringDraft.actions)})
+          on conflict (mission_id) do update set revision=excluded.revision,actions=excluded.actions`;
+      } else if (old.scoringDraft && !mission.scoringDraft) {
+        await tx`delete from app_private.scoring_action_drafts where mission_id=${mission.id}`;
+      }
       if (mission.status === 'done')
         await tx`update public.evidence set client_visible=true where mission_id=${mission.id}`;
       await tx`update public.missions set status=${mission.status},elapsed_ms=${mission.elapsed},running_since=${mission.runningSince ? new Date(mission.runningSince) : null},

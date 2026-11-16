@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { CorrectiveActions } from '@/components/corrective-actions';
 import { useConsole } from '@/lib/console-context';
 import {
   Card,
@@ -14,10 +15,8 @@ import { CRITERIA } from '@/domain/reference';
 import { scoreOf, levelOf } from '@/domain/commands';
 import { formatDate } from '@/lib/i18n';
 export default function Dashboard() {
-  const { state, actor, locale, t, tx, clientFilter, navigate, execute, busy, notify, summary } =
-    useConsole();
+  const { state, actor, locale, t, tx, clientFilter, navigate, summary } = useConsole();
   const [page, setPage] = useState(1);
-  const [error, setError] = useState('');
   const scoped = state.missions.filter(
     (m) => clientFilter === 'all' || m.scenarioSnapshot.clientId === clientFilter,
   );
@@ -241,60 +240,7 @@ export default function Dashboard() {
             <h2>{t('actionsTitle')}</h2>
             <span className="muted chart-alt">{t('actionsHint')}</span>
           </div>
-          {error && (
-            <p className="err" role="alert">
-              {error}
-            </p>
-          )}
-          <div className="acts-list actions-scroll">
-            {[...actions]
-              .sort((a, b) => Number(a.done) - Number(b.done) || a.horizon - b.horizon)
-              .map((action) => {
-                const mission = done.find((m) => m.id === action.missionId);
-                return (
-                  <div className={`act ${action.done ? 'done' : ''}`} key={action.id}>
-                    <input
-                      type="checkbox"
-                      id={`action-${action.id}`}
-                      checked={action.done}
-                      disabled={busy}
-                      onChange={async (e) => {
-                        setError('');
-                        try {
-                          await execute({
-                            type: 'action.toggle',
-                            id: action.id,
-                            done: e.target.checked,
-                          });
-                          notify(t(action.done ? 'actOpen' : 'actDone'));
-                        } catch (err) {
-                          setError(err instanceof Error ? err.message : 'Error');
-                        }
-                      }}
-                    />
-                    <label htmlFor={`action-${action.id}`}>
-                      <span className="tx">{tx(action.text)}</span>
-                      <br />
-                      <span className="muted chart-alt">
-                        {tx(action.owner) || t('ownerTbd')} ·{' '}
-                        {
-                          state.clients.find((c) => c.id === mission?.scenarioSnapshot.clientId)
-                            ?.name
-                        }
-                      </span>
-                      <br />
-                      <span className="muted chart-alt">
-                        {locale === 'fr' ? 'Échéance' : 'Due'} : {formatDate(action.dueAt, locale)}
-                      </span>
-                    </label>
-                    <span className={`hz hz${action.horizon}`}>
-                      {action.horizon} {t('d')}
-                    </span>
-                  </div>
-                );
-              })}
-            {!actions.length && <EmptyState>{t('noActions')}</EmptyState>}
-          </div>
+          <CorrectiveActions actions={actions} showClient />
         </Card>
       </div>
     </>

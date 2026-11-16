@@ -9,6 +9,8 @@ import {
   requestSchema,
   reviewRequestSchema,
   listQuerySchema,
+  requestListQuerySchema,
+  type AuditRequestRecord,
   type TeamPage,
   type RequestPage,
   type OrganizationPage,
@@ -274,20 +276,55 @@ export async function acceptInvitation(userId: string, input: unknown) {
 }
 
 export async function listRequests(userId: string, input: unknown): Promise<RequestPage> {
-  const query = parse(listQuerySchema, input);
+  const query = parse(requestListQuerySchema, input);
   return database().begin(async (tx) => {
     const profile = await trustedAccess(tx, userId);
     if (profile.role === 'operateur') throw deny();
     await readRole(tx, userId);
     const pattern = `%${query.search.replace(/[\\%_]/g, '\\$&')}%`;
-    const filter = query.status === 'all' ? null : query.status;
+    const hasPublishedReport = tx`exists (
+      select 1 from public.published_reports p where p.client_id=r.client_id
+        and p.snapshot #>> '{scenario,id}' = r.scenario_id::text
+    )`;
+    let filter = tx`true`;
+    if (query.status === 'published') filter = hasPublishedReport;
+    else if (query.status === 'converted')
+      filter = tx`r.status='converted' and not ${hasPublishedReport}`;
+    else if (query.status !== 'all') filter = tx`r.status=${query.status}`;
     const rows =
       await tx`select r.*,c.name as client_name from public.audit_requests r join public.clients c on c.id=r.client_id
-      where (${filter}::text is null or r.status=${filter}) and (r.title ilike ${pattern} or c.name ilike ${pattern})
+      where ${filter} and (r.title ilike ${pattern} or c.name ilike ${pattern})
       order by r.created_at desc,r.id desc limit 25 offset ${(query.page - 1) * 25}`;
     const total =
       await tx`select count(*) as n from public.audit_requests r join public.clients c on c.id=r.client_id
-      where (${filter}::text is null or r.status=${filter}) and (r.title ilike ${pattern} or c.name ilike ${pattern})`;
+      where ${filter} and (r.title ilike ${pattern} or c.name ilike ${pattern})`;
+    // Use the frozen report projection under the reader's RLS policies. A retest
+    // has its own scenario, so follow the published baseline link, never a title.
+    const reportsByRequest = new Map<string, AuditRequestRecord['publishedReports']>();
+    const converted = rows.filter((row) => row.scenario_id).map((row) => row.id);
+    if (converted.length) {
+      const reports = await tx`with recursive linked as (
+        select r.id as request_id,p.client_id,p.mission_id,p.published_at,
+          (p.snapshot->>'baselineMissionId' is not null) as is_retest
+        from public.audit_requests r join public.published_reports p
+          on p.client_id=r.client_id and p.snapshot #>> '{scenario,id}' = r.scenario_id::text
+        where r.id=any(${converted}::uuid[])
+        union
+        select l.request_id,p.client_id,p.mission_id,p.published_at,true
+        from linked l join public.published_reports p
+          on p.client_id=l.client_id and p.snapshot->>'baselineMissionId'=l.mission_id::text
+      ) select request_id,mission_id,published_at,is_retest from linked
+        order by published_at desc,mission_id desc`;
+      for (const row of reports) {
+        const list = reportsByRequest.get(row.request_id) ?? [];
+        list.push({
+          missionId: row.mission_id,
+          publishedAt: iso(row.published_at),
+          isRetest: row.is_retest,
+        });
+        reportsByRequest.set(row.request_id, list);
+      }
+    }
     return {
       page: query.page,
       pageSize: 25,
@@ -302,9 +339,10 @@ export async function listRequests(userId: string, input: unknown): Promise<Requ
         siteCount: r.site_count,
         preferredDate: r.preferred_date ? iso(r.preferred_date).slice(0, 10) : null,
         brief: r.brief,
-        status: r.status,
+        status: reportsByRequest.has(r.id) ? 'published' : r.status,
         reviewNote: r.review_note,
-        scenarioId: r.scenario_id,
+        scenarioId: profile.role === 'qualite' ? r.scenario_id : null,
+        publishedReports: reportsByRequest.get(r.id) ?? [],
         revision: r.revision,
         createdAt: iso(r.created_at),
       })),

@@ -144,7 +144,7 @@ test('client can view a sample report and use English request and billing pages'
     fullPage: false,
   });
   await page.getByRole('link', { name: 'Audit requests', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Request an audit', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your requests', exact: true })).toBeVisible();
   await page.goto('/app/billing');
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(

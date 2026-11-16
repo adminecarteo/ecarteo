@@ -13,29 +13,32 @@ import {
 } from '@/components/ui';
 import { CRITERIA } from '@/domain/reference';
 import { levelOf, scoreOf, scoringFingerprint as fingerprint } from '@/domain/commands';
-import type { ActionDraft, Comments, CriterionId, Mission, Scores } from '@/domain/types';
+import type { ScoringActionDraft, Comments, CriterionId, Mission, Scores } from '@/domain/types';
 import { useConsole } from '@/lib/console-context';
 import { formatDate } from '@/lib/i18n';
+import styles from './scoring.module.css';
 
-interface Suggestion extends ActionDraft {
-  include: boolean;
-}
 interface ScoreDraft {
   scores: Scores;
   comments: Comments;
   critical: boolean;
-  suggestions: Partial<Record<CriterionId, Suggestion>>;
+  suggestions: Partial<Record<CriterionId, ScoringActionDraft>>;
   sourceFingerprint: string;
 }
 
-function readDraft(key: string, mission: Mission): ScoreDraft {
-  const initial = {
+function savedDraft(mission: Mission): ScoreDraft {
+  return {
     scores: mission.scores,
     comments: mission.comments,
     critical: mission.critical,
-    suggestions: {},
+    suggestions: Object.fromEntries(
+      (mission.scoringDraft?.actions ?? []).map((action) => [action.critId, action]),
+    ),
     sourceFingerprint: fingerprint(mission),
   };
+}
+function readDraft(key: string, mission: Mission): ScoreDraft {
+  const initial = savedDraft(mission);
   if (mission.status === 'done' || typeof window === 'undefined') return initial;
   try {
     const raw = sessionStorage.getItem(key);
@@ -70,15 +73,15 @@ function ScoringEditor({ mission }: { mission: Mission }) {
   const conflict = !readonly && fingerprint(mission) !== draft.sourceFingerprint;
   const conflictMessage =
     locale === 'fr'
-      ? 'La notation enregistrée a changé dans un autre onglet. Rechargez les notes enregistrées avant de continuer.'
-      : 'Saved scoring changed in another tab. Reload the saved ratings before continuing.';
+      ? 'Une autre personne ou un autre onglet a modifié le brouillon. Rechargez la version enregistrée pour continuer.'
+      : 'Another reviewer or tab changed this draft. Reload the saved version to continue.';
   const effective = readonly ? mission : { ...mission, ...draft };
   const score = scoreOf(effective);
   const level = levelOf(score, effective.critical);
   const scenario = mission.scenarioSnapshot;
   const evidenceCount = state.evidence.filter((item) => item.missionId === mission.id).length;
   const date = (value: string) => formatDate(value, locale);
-  const suggestions: Suggestion[] = CRITERIA.flatMap((criterion) => {
+  const suggestions: ScoringActionDraft[] = CRITERIA.flatMap((criterion) => {
     const value = draft.scores[criterion.id];
     if (value == null || value > 2) return [];
     return [
@@ -108,7 +111,7 @@ function ScoringEditor({ mission }: { mission: Mission }) {
     }
   }
 
-  function updateSuggestion(action: Suggestion, change: Partial<Suggestion>) {
+  function updateSuggestion(action: ScoringActionDraft, change: Partial<ScoringActionDraft>) {
     updateDraft({
       suggestions: { ...draft.suggestions, [action.critId]: { ...action, ...change } },
     });
@@ -142,22 +145,41 @@ function ScoringEditor({ mission }: { mission: Mission }) {
         }
         notify(t('toastValidated'));
       } else {
+        // Snapshot all visible proposals, including untouched template defaults. Keep edits to
+        // temporarily hidden criteria so changing a rating back can restore the original proposal.
+        const savedSuggestions = {
+          ...draft.suggestions,
+          ...Object.fromEntries(suggestions.map((action) => [action.critId, action])),
+        };
+        const actions = Object.values(savedSuggestions).filter(
+          (action): action is ScoringActionDraft => Boolean(action),
+        );
         await execute({
           type: 'mission.score',
           id: mission.id,
           scores: draft.scores,
           comments: draft.comments,
           critical: draft.critical,
+          draftActions: actions,
           expectedScoringFingerprint: draft.sourceFingerprint,
         });
-        const savedDraft = { ...draft, sourceFingerprint: fingerprint(draft) };
-        setDraft(savedDraft);
+        // Advance exactly one revision. Another reviewer's intervening save must remain a conflict.
+        const revision = (mission.scoringDraft?.revision ?? 0) + 1;
+        setDraft({
+          ...draft,
+          suggestions: savedSuggestions,
+          sourceFingerprint: fingerprint({ ...draft, scoringDraft: { revision, actions } }),
+        });
         try {
-          sessionStorage.setItem(draftKey, JSON.stringify(savedDraft));
+          sessionStorage.removeItem(draftKey);
         } catch {
           /* Saved scores remain in the workspace. */
         }
-        notify(locale === 'fr' ? 'Brouillon de notation enregistré' : 'Scoring draft saved');
+        notify(
+          locale === 'fr'
+            ? 'Notation et plan d’actions enregistrés'
+            : 'Scores and action plan saved',
+        );
       }
       setDraftChanged(false);
       setConfirm(false);
@@ -210,18 +232,11 @@ function ScoringEditor({ mission }: { mission: Mission }) {
   }
 
   function reloadScores() {
-    const next: ScoreDraft = {
-      scores: mission.scores,
-      comments: mission.comments,
-      critical: mission.critical,
-      suggestions: draft.suggestions,
-      sourceFingerprint: fingerprint(mission),
-    };
-    setDraft(next);
+    setDraft(savedDraft(mission));
     setError('');
     setDraftChanged(false);
     try {
-      sessionStorage.setItem(draftKey, JSON.stringify(next));
+      sessionStorage.removeItem(draftKey);
     } catch {
       /* The current copy stays usable. */
     }
@@ -256,7 +271,7 @@ function ScoringEditor({ mission }: { mission: Mission }) {
         <div className="callout warn" role="alert">
           <p>{conflictMessage}</p>
           <Button size="sm" disabled={busy || saving} onClick={() => setReloadConfirm(true)}>
-            {locale === 'fr' ? 'Recharger les notes' : 'Reload saved ratings'}
+            {locale === 'fr' ? 'Recharger le brouillon' : 'Reload saved draft'}
           </Button>
         </div>
       )}
@@ -432,8 +447,8 @@ function ScoringEditor({ mission }: { mission: Mission }) {
           {draftChanged && (
             <p className="muted" style={{ fontSize: 12 }}>
               {locale === 'fr'
-                ? 'Brouillon conservé dans cet onglet. Enregistrez la notation avant de le fermer.'
-                : 'Draft retained in this tab. Save scores before closing it.'}
+                ? 'Modifications conservées dans cet onglet. Enregistrez le brouillon pour les retrouver ailleurs.'
+                : 'Changes are held in this tab. Save the draft to continue elsewhere.'}
             </p>
           )}
         </div>
@@ -447,17 +462,36 @@ function ScoringEditor({ mission }: { mission: Mission }) {
             ? 'La validation publie le rapport et fige la notation, les preuves et le plan d’actions. Vérifiez les constats avant de confirmer.'
             : 'Approval publishes the report and locks its scores, evidence and action plan. Review the findings before confirming.'
         }
-        confirmLabel={locale === 'fr' ? 'Valider le rapport' : 'Approve report'}
+        confirmLabel={locale === 'fr' ? 'Publier le rapport' : 'Publish report'}
         onConfirm={() => save(true)}
-      />
+      >
+        <dl className={styles.publicationSummary}>
+          <div>
+            <dt>Client</dt>
+            <dd>{state.clients.find((client) => client.id === scenario.clientId)?.name ?? '—'}</dd>
+          </div>
+          <div>
+            <dt>Mission</dt>
+            <dd>{tx(scenario.title)}</dd>
+          </div>
+          <div>
+            <dt>Score</dt>
+            <dd>{score}/100</dd>
+          </div>
+          <div>
+            <dt>{locale === 'fr' ? 'Actions correctives' : 'Corrective actions'}</dt>
+            <dd>{suggestions.filter((action) => action.include).length}</dd>
+          </div>
+        </dl>
+      </ConfirmDialog>
       <ConfirmDialog
         open={reloadConfirm}
         onOpenChange={setReloadConfirm}
-        title={locale === 'fr' ? 'Recharger les notes enregistrées ?' : 'Reload saved ratings?'}
+        title={locale === 'fr' ? 'Recharger le brouillon enregistré ?' : 'Reload the saved draft?'}
         description={
           locale === 'fr'
-            ? 'Les notes, commentaires et le signalement critique de ce brouillon seront remplacés par la version enregistrée. Vos propositions d’actions seront conservées.'
-            : 'This draft’s ratings, comments and critical flag will be replaced by the saved version. Your proposed actions will be kept.'
+            ? 'La notation et le plan d’actions de cet onglet seront remplacés par la version enregistrée dans votre espace.'
+            : 'The saved workspace version will replace this tab’s ratings and action plan.'
         }
         confirmLabel={locale === 'fr' ? 'Recharger' : 'Reload'}
         onConfirm={reloadScores}

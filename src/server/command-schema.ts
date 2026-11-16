@@ -96,6 +96,10 @@ export const commandSchema: z.ZodType<Command> = z.discriminatedUnion('type', [
     scores,
     comments,
     critical: z.boolean(),
+    draftActions: z
+      .array(action.extend({ include: z.boolean() }))
+      .max(8)
+      .optional(),
     expectedScoringFingerprint: fingerprint,
   }),
   z.strictObject({

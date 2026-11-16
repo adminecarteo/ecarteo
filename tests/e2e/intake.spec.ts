@@ -23,6 +23,8 @@ test.describe('authenticated audit intake and protocol preparation', () => {
     const title = `Recette demande ${randomUUID().slice(0, 8)}`;
     await login(page, clientEmail!, clientPassword!);
     await page.goto('/app/requests');
+    const newRequest = page.getByRole('button', { name: 'Nouvelle demande', exact: true });
+    if (await newRequest.isVisible()) await newRequest.click();
     await page.getByLabel('Objet de la demande', { exact: true }).fill(title);
     await page
       .getByLabel('Votre besoin', { exact: true })

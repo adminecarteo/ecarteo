@@ -72,6 +72,23 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
   align-items: start;
 }
+.requestControl {
+  margin: 0 0 16px;
+}
+.reportLinks {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.reportLinks a {
+  display: inline-block;
+  padding-block: 10px;
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
 .card {
   background: var(--surface);
   border: 1px solid var(--line);

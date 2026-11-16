@@ -66,6 +66,11 @@ export const listQuerySchema = z
       .default('all'),
   })
   .strict();
+export const requestListQuerySchema = listQuerySchema.extend({
+  status: z
+    .enum(['all', 'submitted', 'accepted', 'declined', 'cancelled', 'converted', 'published'])
+    .default('all'),
+});
 
 export interface MemberRecord {
   id: string;
@@ -100,6 +105,7 @@ export interface AuditRequestRecord {
   status: string;
   reviewNote: string;
   scenarioId: string | null;
+  publishedReports: { missionId: string; publishedAt: string; isRetest: boolean }[];
   revision: number;
   createdAt: string;
 }

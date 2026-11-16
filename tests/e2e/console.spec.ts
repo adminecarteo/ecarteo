@@ -146,10 +146,48 @@ test.describe('authenticated quality workspace', () => {
         .getByRole('button', { name: '3', exact: true })
         .click();
     }
+    const availability = page.getByRole('group', { name: 'Note Disponibilité', exact: true });
+    await availability.getByRole('button', { name: '1', exact: true }).click();
+    const speed = page.getByRole('group', { name: 'Note Vitesse', exact: true });
+    await speed.getByRole('button', { name: '2', exact: true }).click();
+    const ownerLabel = 'Responsable côté client · Disponibilité';
+    const deadlineLabel = 'Échéance · Disponibilité';
+    await page.getByRole('textbox', { name: ownerLabel }).fill('Responsable accueil');
+    await page.getByRole('combobox', { name: deadlineLabel }).selectOption('90');
+    await page.getByRole('button', { name: 'Enregistrer le brouillon', exact: true }).click();
+    await expect(
+      page.getByText('Notation et plan d’actions enregistrés', { exact: true }),
+    ).toBeVisible();
+    const freshTab = await page.context().newPage();
+    try {
+      await freshTab.goto(page.url());
+      await expect(freshTab.getByRole('textbox', { name: ownerLabel })).toHaveValue(
+        'Responsable accueil',
+      );
+      await expect(freshTab.getByRole('combobox', { name: deadlineLabel })).toHaveValue('90');
+      const audit = new URL(page.url());
+      const response = await freshTab.request.get(`/api/workspace${audit.search}`);
+      expect(response.ok()).toBe(true);
+      const saved = (await response.json()) as WorkspaceResponse;
+      expect(
+        saved.state.missions.find((m) => m.id === audit.searchParams.get('id'))?.scoringDraft
+          ?.actions,
+      ).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ critId: 'vitesse', include: true, owner: '', horizon: 30 }),
+        ]),
+      );
+    } finally {
+      await freshTab.close();
+    }
+    await availability.getByRole('button', { name: '3', exact: true }).click();
+    await speed.getByRole('button', { name: '3', exact: true }).click();
     await page.getByRole('button', { name: 'Valider et générer le rapport', exact: true }).click();
+    await expect(page.getByRole('dialog')).toContainText(title);
+    await expect(page.getByRole('dialog')).toContainText('75/100');
     await page
       .getByRole('dialog')
-      .getByRole('button', { name: 'Valider le rapport', exact: true })
+      .getByRole('button', { name: 'Publier le rapport', exact: true })
       .click();
     await expect(
       page

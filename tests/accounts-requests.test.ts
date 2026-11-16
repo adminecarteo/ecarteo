@@ -17,6 +17,8 @@ import {
 import { closeWorkspaceDatabase } from '@/server/database';
 import { executeWorkspaceCommand, loadWorkspace } from '@/server/workspace';
 import { scenarioFingerprint } from '@/domain/commands';
+import type { Command } from '@/domain/types';
+import { CRITERIA } from '@/domain/reference';
 
 describe('account and intake schemas', () => {
   it('rejects role/tenant injection and privileged client input', () => {
@@ -78,6 +80,7 @@ describe.skipIf(!testUrl).sequential('team and intake transactions (disposable P
     clientA: randomUUID(),
     clientB: randomUUID(),
     operator: randomUUID(),
+    reportOperator: randomUUID(),
     tenantA: randomUUID(),
     tenantB: randomUUID(),
   };
@@ -96,9 +99,14 @@ describe.skipIf(!testUrl).sequential('team and intake transactions (disposable P
     process.env.APP_URL = 'http://127.0.0.1:3000';
     db = postgres(testUrl!, { max: 3, prepare: false });
     await db`insert into public.clients(id,name) values(${ids.tenantA},'Intake A'),(${ids.tenantB},'Intake B')`;
-    for (const key of ['quality', 'clientA', 'clientB', 'operator'] as const) {
+    for (const key of ['quality', 'clientA', 'clientB', 'operator', 'reportOperator'] as const) {
       const id = ids[key];
-      const role = key === 'quality' ? 'qualite' : key === 'operator' ? 'operateur' : 'client';
+      const role =
+        key === 'quality'
+          ? 'qualite'
+          : key === 'operator' || key === 'reportOperator'
+            ? 'operateur'
+            : 'client';
       const tenant = key === 'clientA' ? ids.tenantA : key === 'clientB' ? ids.tenantB : null;
       await db`insert into auth.users(id,email,email_confirmed_at,is_anonymous,raw_user_meta_data) values(${id},${newEmail()},null,false,'{}')`;
       await db`insert into public.profiles(id,display_name,role,client_id,is_client_admin) values(${id},${key},${role},${tenant},${role === 'client'})`;
@@ -307,6 +315,110 @@ describe.skipIf(!testUrl).sequential('team and intake transactions (disposable P
         note: 'Old review',
       }),
     ).rejects.toMatchObject({ code: 'STALE_REQUEST' });
+  });
+  describe('published reports on client requests', () => {
+    const title = 'Report links ' + randomUUID();
+    let requestId: string,
+      scenarioId: string,
+      original: string,
+      second: string,
+      retest: string,
+      unpublished: string;
+    const run = (command: Command, user = ids.quality) =>
+      executeWorkspaceCommand({ user: { id: user } }, command, { idempotencyKey: randomUUID() });
+    async function publish(id: string) {
+      await run({ type: 'mission.timer', id, running: true }, ids.reportOperator);
+      await run({ type: 'mission.submit', id, allowIncomplete: true }, ids.reportOperator);
+      await run({
+        type: 'mission.approve',
+        id,
+        scores: Object.fromEntries(CRITERIA.map((c) => [c.id, 3])),
+        comments: {},
+        critical: false,
+        actions: [],
+      });
+    }
+    beforeAll(async () => {
+      const input = { ...requestInput(), title };
+      requestId = input.id;
+      await createRequest(ids.clientA, input);
+      const result = await reviewRequest(ids.quality, {
+        id: requestId,
+        revision: 1,
+        action: 'convert',
+      });
+      scenarioId = result.scenarioId!;
+      const source = (
+        await loadWorkspace({ user: { id: ids.quality } }, { view: 'scenarios', id: scenarioId })
+      ).state.scenarios.find((s) => s.id === scenarioId)!;
+      await run({
+        type: 'scenario.update',
+        id: scenarioId,
+        expectedFingerprint: scenarioFingerprint(source),
+        draft: {
+          clientId: source.clientId,
+          title,
+          family: source.family,
+          objective: source.objective,
+          channels: source.channels,
+          lang: source.lang,
+          persona: 'Test visitor',
+          steps: [{ label: 'Submit test form', seuil: 'Confirmation appears' }],
+          evidence: [],
+          limits: 'No external contact.',
+        },
+      });
+      await run({ type: 'scenario.approve', id: scenarioId });
+      const schedule = async () =>
+        (
+          await run({
+            type: 'mission.create',
+            scenarioId,
+            operator: ids.reportOperator,
+            date: '2026-11-16',
+          })
+        ).entityId!;
+      original = await schedule();
+      await publish(original);
+      second = await schedule();
+      await publish(second);
+      retest = (await run({ type: 'mission.retest', id: original })).entityId!;
+      await publish(retest);
+      unpublished = await schedule();
+      for (const user of [ids.clientA, ids.clientB]) {
+        const other = { ...requestInput(), title };
+        await createRequest(user, other);
+        await reviewRequest(ids.quality, { id: other.id, revision: 1, action: 'convert' });
+      }
+    });
+    it('links the original, another published mission and the linked retest with matching status filters and totals', async () => {
+      const page = await listRequests(ids.clientA, { search: title, status: 'published' });
+      expect(page.total).toBe(1);
+      const [item] = page.items;
+      expect(item).toMatchObject({ id: requestId, status: 'published', scenarioId: null });
+      expect(item.publishedReports.map((r) => r.missionId)).toEqual([retest, second, original]);
+      expect(item.publishedReports[0].isRetest).toBe(true);
+      expect(item.publishedReports[2].isRetest).toBe(false);
+      const pending = await listRequests(ids.clientA, { search: title, status: 'converted' });
+      expect(pending.total).toBe(1);
+      expect(pending.items[0].publishedReports).toEqual([]);
+    });
+    it('keeps unpublished mission IDs, other organizations and operator access out of client report links', async () => {
+      const own = await listRequests(ids.clientA, { search: title });
+      expect(JSON.stringify(own)).not.toContain(unpublished);
+      expect(JSON.stringify(own)).not.toContain(scenarioId);
+      const other = await listRequests(ids.clientB, { search: title });
+      expect(other.total).toBe(1);
+      expect(other.items[0].publishedReports).toEqual([]);
+      expect((await listRequests(ids.clientB, { search: title, status: 'published' })).total).toBe(
+        0,
+      );
+      await expect(listRequests(ids.reportOperator, { status: 'published' })).rejects.toMatchObject(
+        {
+          status: 403,
+        },
+      );
+    });
   });
   it('lets a customer cancel pending intake but not an accepted request', async () => {
     const input = requestInput();

@@ -10,6 +10,7 @@ Apply every migration in filename order:
 4. `supabase/migrations/202611090004_billing.sql`
 5. `supabase/migrations/202611090005_operations.sql`
 6. `supabase/migrations/202611090006_workspace_pagination.sql`
+7. `supabase/migrations/202611160007_scoring_action_drafts.sql`
 
 Use the deployment instructions in `docs/DEPLOYMENT.md` for project creation and environment setup. The server needs `DATABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; authentication uses `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `APP_URL`. `SUPABASE_DB_CA_CERT` optionally provides the database CA certificate. Remote database TLS verifies certificates; verification is never disabled to bypass a connection problem. Missing configuration fails closed.
 

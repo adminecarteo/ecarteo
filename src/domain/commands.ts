@@ -9,6 +9,7 @@ import {
   OPERATORS,
 } from './reference';
 import type {
+  ActionDraft,
   Actor,
   AppState,
   Command,
@@ -22,6 +23,7 @@ import type {
   Rating,
   Scenario,
   ScenarioDraft,
+  ScoringActionDraft,
   Scores,
 } from './types';
 
@@ -169,7 +171,7 @@ export function missionElapsed(
 }
 /** Canonical assessment identity for optimistic concurrency, not a security credential. */
 export function scoringFingerprint(
-  mission: Pick<Mission, 'scores' | 'comments' | 'critical'>,
+  mission: Pick<Mission, 'scores' | 'comments' | 'critical' | 'scoringDraft'>,
 ): string {
   const comment = (value: Localized | undefined) =>
     typeof value === 'string'
@@ -184,10 +186,28 @@ export function scoringFingerprint(
     ]),
     comments: CRITERIA.map(({ id }) => [id, comment(mission.comments[id])]),
     critical: mission.critical,
+    ...(mission.scoringDraft ? { draftRevision: mission.scoringDraft.revision } : {}),
   });
 }
 function checkScoringFingerprint(mission: Mission, expected: string | undefined) {
+  if (mission.scoringDraft) assert(expected !== undefined, 'SCORING_CONFLICT');
   if (expected !== undefined) assert(expected === scoringFingerprint(mission), 'SCORING_CONFLICT');
+}
+function cleanDraftActions(actions: ScoringActionDraft[]): ScoringActionDraft[] {
+  assert(Array.isArray(actions) && actions.length <= CRITERIA.length, 'INVALID_INPUT');
+  const seen = new Set<string>();
+  return actions.map((action) => {
+    assert(
+      CRITERIA.some(({ id }) => id === action.critId) && !seen.has(action.critId),
+      'INVALID_INPUT',
+    );
+    assert(
+      [7, 30, 90].includes(action.horizon) && typeof action.include === 'boolean',
+      'INVALID_INPUT',
+    );
+    seen.add(action.critId);
+    return { ...action, text: cleanText(action.text, 2000), owner: cleanText(action.owner, 200) };
+  });
 }
 function setAssessment(mission: Mission, scores: Scores, comments: Comments, critical: boolean) {
   for (const [key, value] of Object.entries(scores)) {
@@ -235,7 +255,12 @@ export function scopedState(state: AppState, actor: Actor): AppState {
     version: state.version,
     clients: state.clients.filter((client) => clientIds.has(client.id)),
     scenarios: state.scenarios.filter((scenario) => scenarioIds.has(scenario.id)),
-    missions,
+    missions: missions.map((mission) => {
+      if (!mission.scoringDraft) return mission;
+      const visible = { ...mission };
+      delete visible.scoringDraft;
+      return visible;
+    }),
     evidence: state.evidence.filter((entry) => missionIds.has(entry.missionId)),
     actions: state.actions.filter((action) => missionIds.has(action.missionId)),
   };
@@ -617,8 +642,19 @@ export function applyCommand(
       quality(actor);
       const mission = findMission(state, command.id);
       assert(mission.status === 'review', 'INVALID_STATE');
+      if (command.draftActions !== undefined)
+        assert(command.expectedScoringFingerprint !== undefined, 'SCORING_CONFLICT');
       checkScoringFingerprint(mission, command.expectedScoringFingerprint);
       setAssessment(mission, command.scores, command.comments, command.critical);
+      if (command.draftActions !== undefined || mission.scoringDraft) {
+        mission.scoringDraft = {
+          revision: (mission.scoringDraft?.revision ?? 0) + 1,
+          actions:
+            command.draftActions === undefined
+              ? mission.scoringDraft!.actions
+              : cleanDraftActions(command.draftActions),
+        };
+      }
       entityId = mission.id;
       break;
     }
@@ -639,6 +675,17 @@ export function applyCommand(
         );
       // Retrying an already completed approval cannot create another report or duplicate actions.
       if (mission.status === 'done' && mission.reportSnapshot) {
+        const comparableAction = (action: ActionDraft) => ({
+          critId: action.critId,
+          horizon: action.horizon,
+          text: cleanText(action.text),
+          owner: cleanText(action.owner, 500),
+        });
+        assert(
+          JSON.stringify(command.actions.map(comparableAction)) ===
+            JSON.stringify(mission.reportSnapshot.actions.map(comparableAction)),
+          'SCORING_CONFLICT',
+        );
         if (hasAssessment) {
           const desired = structuredClone(mission);
           setAssessment(desired, command.scores!, command.comments!, command.critical!);
@@ -677,6 +724,7 @@ export function applyCommand(
         };
       });
       state.actions.push(...actions);
+      delete mission.scoringDraft;
       mission.status = 'done';
       mission.validatedBy = actor.name;
       mission.validatedAt = now;

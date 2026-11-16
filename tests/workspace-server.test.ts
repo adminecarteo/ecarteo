@@ -3,6 +3,7 @@ import postgres from 'postgres';
 import { randomUUID } from 'node:crypto';
 import type { Command, ScenarioDraft } from '@/domain/types';
 import { CRITERIA } from '@/domain/reference';
+import { scoringFingerprint } from '@/domain/commands';
 
 vi.mock('server-only', () => ({}));
 const objects = vi.hoisted(() => new Map<string, Uint8Array>());
@@ -238,14 +239,71 @@ describe
       await deleteStagedAttachment(account(ids.operatorA), staged.fileId);
       expect([...objects.keys()].some((key) => key.endsWith(staged.fileId))).toBe(false);
     });
-    it('approves atomically exactly once, isolates client results, and never rewrites client-safe snapshots on action completion', async () => {
+    it('retains incomplete and excluded action drafts across fresh reads for quality only and rejects stale reviewers', async () => {
       await run({ type: 'mission.submit', id: missionId }, ids.operatorA);
+      const before = (await loadWorkspace(account(ids.quality))).state.missions.find(
+        (m) => m.id === missionId,
+      )!;
+      const save: Extract<Command, { type: 'mission.score' }> = {
+        type: 'mission.score',
+        id: missionId,
+        scores: { vitesse: 1 },
+        comments: {},
+        critical: false,
+        draftActions: [
+          {
+            critId: 'vitesse',
+            horizon: 90,
+            text: 'Review response time',
+            owner: 'Reception',
+            include: true,
+          },
+          { critId: 'dispo', horizon: 30, text: 'Draft only', owner: '', include: false },
+        ],
+        expectedScoringFingerprint: scoringFingerprint(before),
+      };
+      await run(save);
+      const first = (await loadWorkspace(account(ids.quality))).state.missions.find(
+        (m) => m.id === missionId,
+      )!;
+      expect(first.scoringDraft).toEqual({ revision: 1, actions: save.draftActions });
+      const renamed = {
+        ...save,
+        draftActions: save.draftActions!.map((a) => ({ ...a, owner: 'Duty manager' })),
+        expectedScoringFingerprint: scoringFingerprint(first),
+      };
+      await run(renamed);
+      await expect(run({ ...renamed, draftActions: [] })).rejects.toMatchObject({
+        code: 'SCORING_CONFLICT',
+      });
+      await expect(
+        run({ ...renamed, expectedScoringFingerprint: undefined }),
+      ).rejects.toMatchObject({ code: 'SCORING_CONFLICT' });
+      await expect(run(renamed, ids.operatorA)).rejects.toMatchObject({ status: 403 });
+      expect(
+        (await loadWorkspace(account(ids.operatorA))).state.missions.find(
+          (m) => m.id === missionId,
+        ),
+      ).not.toHaveProperty('scoringDraft');
+      await db.begin(async (tx) => {
+        await tx`select set_config('request.jwt.claim.sub',${ids.operatorA},true),set_config('request.jwt.claims',${JSON.stringify({ sub: ids.operatorA, role: 'authenticated' })},true)`;
+        await tx.unsafe('set local role authenticated');
+        expect(
+          await tx`select * from app_private.scoring_action_drafts where mission_id=${missionId}`,
+        ).toHaveLength(0);
+      });
+    });
+    it('approves atomically exactly once, isolates client results, and never rewrites client-safe snapshots on action completion', async () => {
+      const current = (await loadWorkspace(account(ids.quality))).state.missions.find(
+        (m) => m.id === missionId,
+      )!;
       const approval: Command = {
         type: 'mission.approve',
         id: missionId,
         scores: allScores,
         comments: { dispo: 'Answered promptly' },
         critical: false,
+        expectedScoringFingerprint: scoringFingerprint(current),
         actions: [
           { critId: 'vitesse', horizon: 7, text: 'Document the target', owner: 'Reception' },
         ],
@@ -256,6 +314,10 @@ describe
         other = await loadWorkspace(account(ids.clientB));
       expect(own.state.missions).toHaveLength(1);
       expect(other.state.missions).toHaveLength(0);
+      expect(own.state.missions[0]).not.toHaveProperty('scoringDraft');
+      expect(
+        await db`select * from app_private.scoring_action_drafts where mission_id=${missionId}`,
+      ).toHaveLength(0);
       expect(own.state.missions[0].scenarioSnapshot.persona).toBe('');
       expect(own.state.missions[0].log).toHaveLength(0);
       const before =

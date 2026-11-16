@@ -75,6 +75,9 @@ export interface ActionDraft {
   text: Localized;
   owner: Localized;
 }
+export interface ScoringActionDraft extends ActionDraft {
+  include: boolean;
+}
 export interface CorrectiveAction extends ActionDraft {
   id: string;
   missionId: string;
@@ -115,6 +118,7 @@ export interface Mission {
   log: MissionEvent[];
   scores: Scores;
   comments: Comments;
+  scoringDraft?: { revision: number; actions: ScoringActionDraft[] };
   critical: boolean;
   validatedBy: string | null;
   validatedAt: string | null;
@@ -164,6 +168,7 @@ export type Command =
       scores: Scores;
       comments: Comments;
       critical: boolean;
+      draftActions?: ScoringActionDraft[];
       expectedScoringFingerprint?: string;
     }
   | {

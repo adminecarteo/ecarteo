@@ -140,6 +140,7 @@ describe('portal and billing translated rendering', () => {
         status: 'submitted',
         reviewNote: '',
         scenarioId: null,
+        publishedReports: [],
         revision: 1,
         createdAt: '2026-11-09T12:00:00Z',
       },

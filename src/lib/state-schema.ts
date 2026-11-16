@@ -91,6 +91,22 @@ const mission = z.object({
   log: z.array(z.object({ at: z.string(), text: localized })),
   scores,
   comments,
+  scoringDraft: z
+    .object({
+      revision: z.number().int().positive(),
+      actions: z
+        .array(
+          z.object({
+            critId: criterion,
+            horizon: z.union([z.literal(7), z.literal(30), z.literal(90)]),
+            include: z.boolean(),
+            owner: localized,
+            text: localized,
+          }),
+        )
+        .max(8),
+    })
+    .optional(),
   critical: z.boolean(),
   validatedBy: z.string().nullable(),
   validatedAt: z.string().nullable(),

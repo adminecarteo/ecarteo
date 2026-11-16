@@ -13,6 +13,7 @@ function requestLabels(copy: (fr: string, en: string) => string) {
     declined: copy('Refusée', 'Declined'),
     cancelled: copy('Annulée', 'Cancelled'),
     converted: copy('Scénario préparé', 'Scenario prepared'),
+    published: copy('Rapport publié', 'Report published'),
   };
   const sectors: Record<string, string> = {
     hospitality: copy('Hôtellerie et restauration', 'Hospitality'),
@@ -34,16 +35,18 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
   const { copy } = useLocale();
   const { statuses, sectors, channels } = requestLabels(copy);
   const [data, setData] = useState(initial);
+  const [formOpen, setFormOpen] = useState(initial.total === 0);
+  const formToggle = useRef<HTMLButtonElement>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const requestId = useRef<string | null>(null);
-  async function reload(page = data.page) {
+  async function reload(page = data.page, filters = { search, status }) {
     setData(
       await portalRequest<RequestPage>(
-        `/api/audit-requests?${new URLSearchParams({ page: String(page), search, status })}`,
+        `/api/audit-requests?${new URLSearchParams({ page: String(page), ...filters })}`,
       ),
     );
   }
@@ -76,13 +79,17 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
       });
       requestId.current = null;
       form.reset();
+      setFormOpen(false);
+      formToggle.current?.focus();
       setMessage(
         copy(
           'Votre demande a été enregistrée. Écartéo examinera le périmètre avant de planifier l’audit.',
           'Your request has been recorded. Écartéo will review the scope before scheduling the audit.',
         ),
       );
-      await reload(1);
+      setSearch('');
+      setStatus('all');
+      await reload(1, { search: '', status: 'all' });
     });
   }
   return (
@@ -97,9 +104,24 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
           {message}
         </p>
       )}
-      <div className={!quality ? styles.grid : undefined}>
+      {!quality && (
+        <div className={styles.requestControl}>
+          <button
+            ref={formToggle}
+            className={formOpen ? 'btn' : 'btn primary'}
+            aria-controls="new-audit-request"
+            aria-expanded={formOpen}
+            onClick={() => setFormOpen(!formOpen)}
+          >
+            {formOpen
+              ? copy('Masquer le formulaire', 'Hide request form')
+              : copy('Nouvelle demande', 'New request')}
+          </button>
+        </div>
+      )}
+      <div className={!quality && formOpen ? styles.grid : undefined}>
         {!quality && (
-          <section className={styles.card}>
+          <section className={styles.card} id="new-audit-request" hidden={!formOpen}>
             <h2>{copy('Demander un audit', 'Request an audit')}</h2>
             <form
               className={styles.form}
@@ -265,7 +287,11 @@ export function RequestsPanel({ initial, quality }: { initial: RequestPage; qual
               {copy('Précédent', 'Previous')}
             </button>
             <span>
-              {data.total} {copy('demandes · page', 'requests · page')} {data.page}
+              {data.total}{' '}
+              {data.total === 1
+                ? copy('demande · page', 'request · page')
+                : copy('demandes · page', 'requests · page')}{' '}
+              {data.page}
             </span>
             <button
               className="btn"
@@ -322,6 +348,27 @@ function RequestItem({
       </div>
       <p className={styles.brief}>{item.brief}</p>
       {item.reviewNote && <p className={styles.message}>{item.reviewNote}</p>}
+      {Boolean(item.publishedReports?.length) && (
+        <ul className={styles.reportLinks}>
+          {item.publishedReports.map((report) => (
+            <li key={report.missionId}>
+              <Link href={`/app?view=rapport&id=${report.missionId}`}>
+                {report.isRetest
+                  ? copy('Ouvrir le rapport de retest', 'Open retest report')
+                  : copy('Ouvrir le rapport', 'Open report')}
+                {' · '}
+                <time dateTime={report.publishedAt}>
+                  {new Intl.DateTimeFormat(dateLocale, {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                    timeZone: 'Europe/Paris',
+                  }).format(new Date(report.publishedAt))}
+                </time>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
       {quality && ['submitted', 'accepted'].includes(item.status) && (
         <>
           <label className={styles.field}>

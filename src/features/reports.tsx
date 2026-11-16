@@ -1,16 +1,43 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CorrectiveActions } from '@/components/corrective-actions';
 import { Button, Card, EmptyState, PageHeader, ScoreBadge } from '@/components/ui';
 import { canCompareMissions, levelOf, scoreOf } from '@/domain/commands';
 import { CHANNELS, CRITERIA } from '@/domain/reference';
-import type { AppState, Locale, Mission, PublishedReport } from '@/domain/types';
+import type { AppState, Evidence, Locale, Mission, PublishedReport } from '@/domain/types';
 import { useConsole } from '@/lib/console-context';
 import { formatDate } from '@/lib/i18n';
 import type { ReportPdfData } from '@/lib/report-pdf';
 import { fetchReportAddenda, type ReportAddendum } from '@/lib/report-addenda';
 import { reportNeedsBrowserPrint } from '@/lib/report-text';
 import { openPrintableReport } from '@/lib/report-print';
+
+function ReportAttachment({ evidence, locale }: { evidence: Evidence; locale: Locale }) {
+  if (!evidence.fileId) return null;
+  const size = evidence.size;
+  let fileSize = '';
+  if (size !== undefined) {
+    const unit = size >= 1_000_000 ? 'megabyte' : size >= 1_000 ? 'kilobyte' : 'byte';
+    const divisor = unit === 'megabyte' ? 1_000_000 : unit === 'kilobyte' ? 1_000 : 1;
+    fileSize = new Intl.NumberFormat(locale, {
+      style: 'unit',
+      unit,
+      maximumFractionDigits: 1,
+    }).format(size / divisor);
+  }
+  return (
+    <a
+      className="report-download"
+      href={`/api/attachments/${encodeURIComponent(evidence.fileId)}`}
+      download={evidence.file || true}
+    >
+      {locale === 'fr' ? 'Télécharger la preuve' : 'Download evidence'}
+      {evidence.file && ` · ${evidence.file}`}
+      {fileSize && ` (${fileSize})`}
+    </a>
+  );
+}
 
 function ReportSupplements({ missionId, locale }: { missionId: string; locale: Locale }) {
   const [result, setResult] = useState<{ id: string; items?: ReportAddendum[]; error?: string }>();
@@ -130,8 +157,10 @@ export default function Reports() {
         (actor.role !== 'client' || mission.scenarioSnapshot.clientId === actor.clientId),
     )
     .sort((a, b) => b.date.localeCompare(a.date));
-  const mission = done.find((item) => item.id === selectedId) ?? done[0];
+  const mission = selectedId ? done.find((item) => item.id === selectedId) : done[0];
   const report = mission ? publishedReport(state, mission) : null;
+  const trackingLabel =
+    locale === 'fr' ? 'Suivre les actions de cet audit' : 'Track this audit’s actions';
   const date = (value: string) => formatDate(value, locale);
   const dateTime = (value: string) => formatDate(value, locale, true);
   const scenario = report?.scenario;
@@ -261,7 +290,7 @@ export default function Reports() {
 
   async function downloadPdf() {
     const data = exportData();
-    if (!data) return;
+    if (!data || !mission) return;
     setDownloading(true);
     setPrintable(undefined);
     setError('');
@@ -346,6 +375,11 @@ export default function Reports() {
                   navigate('rapport', event.target.value);
                 }}
               >
+                {!mission && (
+                  <option value="" disabled>
+                    {locale === 'fr' ? 'Choisir un rapport' : 'Choose a report'}
+                  </option>
+                )}
                 {done.map((item) => (
                   <option key={item.id} value={item.id}>
                     {
@@ -356,7 +390,9 @@ export default function Reports() {
                   </option>
                 ))}
               </select>
-              <Button onClick={() => void copyReport()}>{t('copyText')}</Button>
+              <Button disabled={!report} onClick={() => void copyReport()}>
+                {t('copyText')}
+              </Button>
               <Button
                 variant="primary"
                 disabled={downloading || !report}
@@ -379,7 +415,7 @@ export default function Reports() {
           {error}
         </p>
       )}
-      {printable?.missionId === mission?.id && (
+      {printable && printable.missionId === mission?.id && (
         <Card>
           <p role="status">
             {locale === 'fr'
@@ -399,8 +435,14 @@ export default function Reports() {
           </Button>
         </Card>
       )}
-      {!report || !scenario ? (
-        <EmptyState>{t('noReport')}</EmptyState>
+      {!report || !scenario || !mission ? (
+        <EmptyState>
+          {selectedId
+            ? locale === 'fr'
+              ? 'Ce rapport est indisponible.'
+              : 'This report is unavailable.'
+            : t('noReport')}
+        </EmptyState>
       ) : (
         <div className="report">
           <div className="rep-head">
@@ -450,6 +492,13 @@ export default function Reports() {
               </div>
             </div>
           </div>
+          <nav
+            className="report-links"
+            aria-label={locale === 'fr' ? 'Sections du rapport' : 'Report sections'}
+          >
+            <a href="#report-evidence">{t('evTitle')}</a>
+            <a href="#report-actions">{trackingLabel}</a>
+          </nav>
           <ReportSupplements missionId={mission.id} locale={locale} />
           <Card>
             <div className="gauge">
@@ -539,7 +588,9 @@ export default function Reports() {
             </Card>
           )}
           <Card>
-            <h2>{t('evTitle')}</h2>
+            <h2 id="report-evidence" tabIndex={-1}>
+              {t('evTitle')}
+            </h2>
             {report.evidence.length ? (
               <ul className="log" style={{ maxHeight: 'none' }}>
                 {report.evidence.map((item) => (
@@ -555,6 +606,7 @@ export default function Reports() {
                           · <span className="muted">{tx(item.text)}</span>
                         </>
                       )}
+                      <ReportAttachment evidence={item} locale={locale} />
                     </span>
                   </li>
                 ))}
@@ -596,11 +648,16 @@ export default function Reports() {
                 );
               })}
             </div>
-            <p className="muted" style={{ marginTop: 12, fontSize: 12 }}>
-              {locale === 'fr'
-                ? 'Plan figé à la validation. Le suivi des actions reste disponible au tableau de bord.'
-                : 'Plan frozen at approval. Live action tracking remains available on the dashboard.'}
-            </p>
+          </Card>
+          <Card>
+            <h2 id="report-actions" tabIndex={-1}>
+              {t('actionsTitle')}
+            </h2>
+            <p className="muted">{t('actionsHint')}</p>
+            <CorrectiveActions
+              key={mission.id}
+              actions={state.actions.filter((action) => action.missionId === mission.id)}
+            />
           </Card>
           <div
             className="callout"
@@ -612,7 +669,13 @@ export default function Reports() {
               flexWrap: 'wrap',
             }}
           >
-            <span>{t('nextStep')}</span>
+            <span>
+              {actor.role === 'client'
+                ? locale === 'fr'
+                  ? 'L’équipe qualité organise le retest pour vérifier les corrections.'
+                  : 'The quality team schedules the retest to check the fixes.'
+                : t('nextStep')}
+            </span>
             {actor.role === 'qualite' && (
               <Button
                 variant="primary"

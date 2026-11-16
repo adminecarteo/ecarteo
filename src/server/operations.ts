@@ -35,6 +35,7 @@ export async function readiness() {
         and to_regclass('app_private.team_invitations') is not null
         and to_regclass('public.audit_requests') is not null
         and to_regclass('app_private.billing_webhook_receipts') is not null
+        and to_regclass('app_private.scoring_action_drafts') is not null
         and to_regclass('public.report_addenda') is not null as schema_ready`;
         return Boolean(result.schema_ready);
       }))(),

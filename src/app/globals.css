@@ -1156,6 +1156,23 @@ textarea {
   flex-direction: column;
   gap: 22px;
 }
+.report-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+.report-links a,
+.report-download {
+  color: var(--accent);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+.report-download {
+  display: block;
+  width: fit-content;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
 .rep-head {
   background: var(--brand);
   color: #fff;
