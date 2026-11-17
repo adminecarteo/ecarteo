@@ -49,10 +49,34 @@ function clientWorkspace() {
     t: translate.bind(null, 'en'),
     tx: localize.bind(null, 'en'),
   };
-  return { action, other };
+  return { action, other, report };
 }
 
 describe('client report follow-up', () => {
+  it.each([
+    ['fr', 'Le seuil de conformité est de 3/4.', 'Réponse après 17 minutes.'],
+    ['en', 'The compliance threshold is 3/4.', 'Response after 17 minutes.'],
+  ] as const)(
+    'shows the threshold for a low score without a comment and preserves recorded findings in %s',
+    (locale, threshold, finding) => {
+      const { report } = clientWorkspace();
+      Object.assign(context.current, {
+        locale,
+        t: translate.bind(null, locale),
+        tx: localize.bind(null, locale),
+      });
+      report.scores = { dispo: 2, vitesse: 1, suivi: 3 };
+      report.comments = {
+        dispo: '  ',
+        vitesse: { fr: 'Réponse après 17 minutes.', en: 'Response after 17 minutes.' },
+      };
+      const html = renderToStaticMarkup(createElement(Reports));
+      expect(html.split(threshold)).toHaveLength(2);
+      expect(html).toContain(finding);
+      expect(html).not.toMatch(/Constat à compléter|Finding to be completed/);
+    },
+  );
+
   it('uses the live action status for this report and renders downloads only for attached files', () => {
     const { action, other } = clientWorkspace();
     const html = renderToStaticMarkup(createElement(Reports));
