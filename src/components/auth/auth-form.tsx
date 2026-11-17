@@ -2,9 +2,14 @@
 
 import Link from 'next/link';
 import { useState, useSyncExternalStore, type FormEvent } from 'react';
-import { getAuthInputSchema, type AuthMode, type AuthResult } from '@/lib/auth-schema';
+import {
+  authPagePath,
+  getAuthInputSchema,
+  type AuthMode,
+  type AuthResult,
+} from '@/lib/auth-schema';
 import { getOffers } from '@/components/marketing/content';
-import { offerRequestPath, type AuditOfferId } from '@/lib/audit-offer';
+import type { AuditOfferId } from '@/lib/audit-offer';
 import { useLocale } from '@/lib/locale-context';
 import { authText, translateAuthFeedback } from '@/lib/auth-copy';
 import styles from './auth.module.css';
@@ -98,13 +103,7 @@ export function AuthForm({
   const text = (key: Parameters<typeof authText>[0]) => authText(key, locale);
   const feedback = (message: string | undefined) => translateAuthFeedback(message, locale);
   const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated);
-  const [values, setValues] = useState({
-    name: '',
-    company: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
+  const [confirmationEmail, setConfirmationEmail] = useState('');
   const [visible, setVisible] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AuthResult>({});
@@ -128,15 +127,28 @@ export function AuthForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || !hydrated || !configured) return;
+    // Read the actual inputs so text typed or autofilled before hydration is preserved.
+    const form = event.currentTarget;
+    const fields = new FormData(form);
+    const email = String(fields.get('email') ?? '').trim();
+    const password = String(fields.get('password') ?? '');
+    const confirmPassword = String(fields.get('confirmPassword') ?? '');
     const input =
       mode === 'signup'
-        ? { action: mode, ...values, ...(offer ? { offer } : {}) }
+        ? {
+            action: mode,
+            email,
+            password,
+            confirmPassword,
+            name: fields.get('name'),
+            company: fields.get('company'),
+            ...(offer ? { offer } : {}),
+          }
         : mode === 'login'
-          ? { action: mode, email: values.email.trim(), password: values.password, next }
+          ? { action: mode, email, password, next }
           : mode === 'forgot' || mode === 'resend'
-            ? { action: mode, email: values.email.trim() }
-            : { action: mode, password: values.password, confirmPassword: values.confirmPassword };
-    if ('email' in input && typeof input.email === 'string') input.email = input.email.trim();
+            ? { action: mode, email }
+            : { action: mode, password, confirmPassword };
     const parsed = getAuthInputSchema(locale).safeParse(input);
     if (!parsed.success) {
       const errors: Record<string, string> = {};
@@ -156,9 +168,14 @@ export function AuthForm({
     setResult({});
     try {
       const data = await send(parsed.data);
+      if (mode === 'signup' && data.message) setConfirmationEmail(email);
       setResult(data);
-      if (data.error || data.message)
-        setValues((previous) => ({ ...previous, password: '', confirmPassword: '' }));
+      if (data.error || data.message) {
+        for (const name of ['password', 'confirmPassword']) {
+          const field = form.elements.namedItem(name);
+          if (field instanceof HTMLInputElement) field.value = '';
+        }
+      }
     } catch {
       setResult({ error: text('connectionInterrupted') });
     } finally {
@@ -169,7 +186,7 @@ export function AuthForm({
     if (resending) return;
     setResending(true);
     try {
-      setResult(await send({ action: 'resend', email: values.email.trim() }));
+      setResult(await send({ action: 'resend', email: confirmationEmail }));
     } catch {
       setResult({ error: text('deliveryInterrupted') });
     } finally {
@@ -191,7 +208,12 @@ export function AuthForm({
       setBusy(false);
     }
   }
-  function field(name: keyof typeof values, label: string, type = 'text', autoComplete?: string) {
+  function field(
+    name: 'name' | 'company' | 'email' | 'password' | 'confirmPassword',
+    label: string,
+    type = 'text',
+    autoComplete?: string,
+  ) {
     const error = feedback(result.fieldErrors?.[name]);
     const isPassword = type === 'password';
     const help = name === 'password' && mode !== 'login';
@@ -203,13 +225,11 @@ export function AuthForm({
             id={`auth-${name}`}
             name={name}
             type={isPassword && visible[name] ? 'text' : type}
-            value={values[name]}
             autoComplete={autoComplete}
             required
             maxLength={name === 'email' ? 254 : name === 'company' ? 250 : 128}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? `auth-${name}-error` : help ? 'password-help' : undefined}
-            onChange={(event) => setValues({ ...values, [name]: event.target.value })}
           />
           {isPassword && (
             <button
@@ -274,10 +294,10 @@ export function AuthForm({
       {notice === 'invalid-link' && (
         <div className={styles.linkHelp} role="status">
           <p>{copy('Ce lien est invalide ou a expiré.', 'This link is invalid or has expired.')}</p>
-          <Link href="/resend-confirmation">
+          <Link href={authPagePath('/resend-confirmation', next)}>
             {copy('Renvoyer la confirmation du compte', 'Resend account confirmation')}
           </Link>
-          <Link href="/forgot-password">
+          <Link href={authPagePath('/forgot-password', next)}>
             {copy('Demander un lien de réinitialisation', 'Request a password reset link')}
           </Link>
         </div>
@@ -317,7 +337,9 @@ export function AuthForm({
                 : copy('Renvoyer la confirmation', 'Resend confirmation')}
             </button>
           )}
-          <Link href="/login">{copy('Retour à la connexion', 'Back to sign in')}</Link>
+          <Link href={authPagePath('/login', next)}>
+            {copy('Retour à la connexion', 'Back to sign in')}
+          </Link>
         </div>
       ) : (
         <form method="post" action="/api/auth" onSubmit={submit} noValidate aria-busy={busy}>
@@ -365,7 +387,7 @@ export function AuthForm({
               'new-password',
             )}
           {mode === 'login' && (
-            <Link className={styles.forgot} href="/forgot-password">
+            <Link className={styles.forgot} href={authPagePath('/forgot-password', next)}>
               {copy('Mot de passe oublié ?', 'Forgot your password?')}
             </Link>
           )}
@@ -393,19 +415,19 @@ export function AuthForm({
         {mode === 'login' ? (
           <>
             {copy('Pas encore de compte ?', 'Don’t have an account yet?')}{' '}
-            <Link href="/signup">{copy('Créer un compte', 'Create an account')}</Link>
+            <Link href={authPagePath('/signup', next)}>
+              {copy('Créer un compte', 'Create an account')}
+            </Link>
           </>
         ) : mode === 'signup' ? (
           <>
             {copy('Déjà un compte ?', 'Already have an account?')}{' '}
-            <Link
-              href={offer ? `/login?next=${encodeURIComponent(offerRequestPath(offer))}` : '/login'}
-            >
-              {copy('Se connecter', 'Sign in')}
-            </Link>
+            <Link href={authPagePath('/login', next)}>{copy('Se connecter', 'Sign in')}</Link>
           </>
         ) : (
-          <Link href="/login">{copy('Retour à la connexion', 'Back to sign in')}</Link>
+          <Link href={authPagePath('/login', next)}>
+            {copy('Retour à la connexion', 'Back to sign in')}
+          </Link>
         )}
       </p>
     </div>

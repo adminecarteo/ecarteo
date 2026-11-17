@@ -3,7 +3,7 @@ import { getRequestLocale } from '@/server/locale';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthForm } from '@/components/auth/auth-form';
 import { authConfigured } from '@/server/config';
-import { safeNext } from '@/lib/auth-schema';
+import { authPagePath, safeNext } from '@/lib/auth-schema';
 import { requireUser } from '@/server/auth';
 import { redirect } from 'next/navigation';
 import { AppError } from '@/server/http';
@@ -25,10 +25,11 @@ export default async function Page({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
+  const next = safeNext(typeof params.next === 'string' ? params.next : undefined);
   if (isFrontendDeployment())
     return (
       <FrontendReset
-        next={safeNext(typeof params.next === 'string' ? params.next : undefined)}
+        next={next}
         notice={typeof params.notice === 'string' ? params.notice : undefined}
       />
     );
@@ -36,7 +37,8 @@ export default async function Page({
     try {
       await requireUser();
     } catch (error) {
-      if (error instanceof AppError && error.status === 401) redirect('/forgot-password');
+      if (error instanceof AppError && error.status === 401)
+        redirect(authPagePath('/forgot-password', next));
       throw error;
     }
   }
@@ -45,7 +47,7 @@ export default async function Page({
       <AuthForm
         mode="reset"
         configured={authConfigured()}
-        next={safeNext(typeof params.next === 'string' ? params.next : undefined)}
+        next={next}
         notice={typeof params.notice === 'string' ? params.notice : undefined}
       />
     </AuthShell>

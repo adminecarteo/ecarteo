@@ -10,6 +10,7 @@ import { ConsoleApp } from '@/components/console-app';
 import { PortalShell } from '@/components/portal/portal-shell';
 import { TeamPanel } from '@/components/portal/team-panel';
 import { offerRequestPath, type AuditOfferId } from '@/lib/audit-offer';
+import { authPagePath } from '@/lib/auth-schema';
 import { RequestsPanel } from '@/components/portal/requests-panel';
 import { JoinPanel } from '@/components/portal/join-panel';
 import Billing from '@/features/billing';
@@ -330,7 +331,11 @@ export function FrontendJoin() {
 
 export function FrontendReset({ next, notice }: { next: string; notice?: string }) {
   return (
-    <RemoteBootstrap resource="reset" load={readIdentity} loginPath="/forgot-password">
+    <RemoteBootstrap
+      resource="reset"
+      load={readIdentity}
+      loginPath={authPagePath('/forgot-password', next)}
+    >
       {() => (
         <AuthShell>
           <AuthForm mode="reset" configured next={next} notice={notice} />
