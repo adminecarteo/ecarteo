@@ -121,3 +121,24 @@ test('compact public navigation fits small screens and restores keyboard focus',
   await expect(current).toBeHidden();
   await expect(toggle).toBeFocused();
 });
+
+test.describe('public navigation on touch screens', () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+
+  test('menu links navigate on the first tap', async ({ page }) => {
+    for (const [label, path] of [
+      ['La méthode', '/methode'],
+      ['Les offres', '/offres'],
+      ['Se connecter', '/login'],
+      ['Créer un compte', '/signup'],
+    ]) {
+      await page.goto('/');
+      await page.locator('summary').tap();
+      await page
+        .getByRole('navigation', { name: 'Navigation mobile' })
+        .getByRole('link', { name: label })
+        .tap();
+      await expect(page).toHaveURL(path);
+    }
+  });
+});

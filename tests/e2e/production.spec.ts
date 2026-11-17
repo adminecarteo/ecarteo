@@ -1,5 +1,44 @@
 import { expect, test } from '@playwright/test';
 
+test('sign-in retains credentials typed while application scripts are loading', async ({
+  page,
+}) => {
+  let resume!: () => void;
+  const scripts = new Promise<void>((resolve) => {
+    resume = resolve;
+  });
+  await page.route('**/_next/static/**/*.js', async (route) => {
+    await scripts;
+    await route.continue();
+  });
+  try {
+    await page.goto('/login', { waitUntil: 'commit' });
+    const form = page.locator('form');
+    await expect(form).toBeVisible();
+    test.skip((await page.getByRole('status').count()) > 0, 'Requires a configured auth provider.');
+    const submit = form.locator('button[type=submit]');
+    await expect(submit).toBeDisabled();
+    await form.locator('[name=email]').fill('early-entry@example.test');
+    await form.locator('[name=password]').fill('synthetic-early-entry');
+    resume();
+    await expect(submit).toBeEnabled();
+    await expect(form.locator('[name=email]')).toHaveValue('early-entry@example.test');
+    await page.route('**/api/auth', (route) =>
+      route.fulfill({ status: 401, json: { error: 'Test response' } }),
+    );
+    const request = page.waitForRequest((r) => new URL(r.url()).pathname === '/api/auth');
+    await submit.click();
+    expect((await request).postDataJSON()).toMatchObject({
+      action: 'login',
+      email: 'early-entry@example.test',
+      password: 'synthetic-early-entry',
+    });
+    await expect(form.locator('[name=password]')).toHaveValue('');
+  } finally {
+    resume();
+  }
+});
+
 test('auth link redirects suppress referrers while public pages keep the site policy', async ({
   request,
 }) => {

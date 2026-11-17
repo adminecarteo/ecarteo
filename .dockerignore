@@ -14,6 +14,8 @@ backups
 !.env.example
 test-results
 playwright-report
+out
+.gstack
 *.tsbuildinfo
 .DS_Store
 .impeccable

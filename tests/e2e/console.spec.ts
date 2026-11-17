@@ -152,6 +152,12 @@ test.describe('authenticated quality workspace', () => {
     await speed.getByRole('button', { name: '2', exact: true }).click();
     const ownerLabel = 'Responsable côté client · Disponibilité';
     const deadlineLabel = 'Échéance · Disponibilité';
+    const findingLabel = 'Constat factuel appuyé sur une preuve · Disponibilité';
+    const actionLabel = 'Plan d’actions proposé · Disponibilité';
+    const findingText = 'Aucune réponse lors du premier contact, comme indiqué dans la preuve.';
+    const actionText = 'Prévoir un relais pour le premier contact.';
+    await page.getByRole('textbox', { name: findingLabel }).fill(findingText);
+    await page.getByRole('textbox', { name: actionLabel }).fill(actionText);
     await page.getByRole('textbox', { name: ownerLabel }).fill('Responsable accueil');
     await page.getByRole('combobox', { name: deadlineLabel }).selectOption('90');
     await page.getByRole('button', { name: 'Enregistrer le brouillon', exact: true }).click();
@@ -161,6 +167,13 @@ test.describe('authenticated quality workspace', () => {
     const freshTab = await page.context().newPage();
     try {
       await freshTab.goto(page.url());
+      await expect(freshTab.getByRole('textbox', { name: findingLabel })).toHaveValue(findingText);
+      await expect(freshTab.getByRole('textbox', { name: actionLabel })).toHaveValue(actionText);
+      await expect(
+        freshTab
+          .getByRole('group', { name: 'Note Disponibilité', exact: true })
+          .getByRole('button', { name: '1', exact: true }),
+      ).toHaveAttribute('aria-pressed', 'true');
       await expect(freshTab.getByRole('textbox', { name: ownerLabel })).toHaveValue(
         'Responsable accueil',
       );

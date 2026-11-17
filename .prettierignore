@@ -2,6 +2,9 @@ node_modules
 .next
 .next-qa
 .next-frontend
+.env*
+.gstack
+out
 package-lock.json
 *.tsbuildinfo
 playwright-report

@@ -5,7 +5,14 @@ import { CorrectiveActions } from '@/components/corrective-actions';
 import { Button, Card, EmptyState, PageHeader, ScoreBadge } from '@/components/ui';
 import { canCompareMissions, levelOf, scoreOf } from '@/domain/commands';
 import { CHANNELS, CRITERIA } from '@/domain/reference';
-import type { AppState, Evidence, Locale, Mission, PublishedReport } from '@/domain/types';
+import type {
+  AppState,
+  CriterionId,
+  Evidence,
+  Locale,
+  Mission,
+  PublishedReport,
+} from '@/domain/types';
 import { useConsole } from '@/lib/console-context';
 import { formatDate } from '@/lib/i18n';
 import type { ReportPdfData } from '@/lib/report-pdf';
@@ -204,6 +211,13 @@ export default function Reports() {
         )
       : '';
 
+  function criterionComment(published: PublishedReport, id: CriterionId) {
+    const comment = tx(published.comments[id]);
+    if (comment.trim()) return comment;
+    const score = published.scores[id];
+    return score != null && score <= 2 ? t('complianceThreshold') : '';
+  }
+
   function exportData(): ReportPdfData | null {
     if (!report || !scenario) return null;
     return {
@@ -222,7 +236,7 @@ export default function Reports() {
       criteria: CRITERIA.map((criterion) => ({
         name: tx(criterion.name),
         score: report.scores[criterion.id] == null ? 'n/a' : `${report.scores[criterion.id]}/4`,
-        comment: report.comments[criterion.id] ? tx(report.comments[criterion.id]!) : '',
+        comment: criterionComment(report, criterion.id),
       })),
       evidence: report.evidence.map((item) => ({
         date: dateTime(item.at),
@@ -584,9 +598,7 @@ export default function Reports() {
                     <div>
                       <b>{tx(criterion.name)}</b>
                       <p className="muted" style={{ fontSize: 13 }}>
-                        {report.comments[criterion.id]
-                          ? tx(report.comments[criterion.id]!)
-                          : t('toComplete')}
+                        {criterionComment(report, criterion.id)}
                       </p>
                     </div>
                   </div>

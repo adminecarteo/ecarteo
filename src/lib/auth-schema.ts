@@ -71,3 +71,11 @@ export function safeNext(value?: string | null): string {
     ? `${url.pathname}${url.search}`
     : '/app';
 }
+
+export function authPagePath(
+  page: '/login' | '/signup' | '/forgot-password' | '/resend-confirmation',
+  next: string,
+): string {
+  const destination = safeNext(next);
+  return destination === '/app' ? page : `${page}?next=${encodeURIComponent(destination)}`;
+}

@@ -16,3 +16,4 @@ supabase/.branches/
 .impeccable/*
 !.impeccable/config.json
 /backups/
+.gstack/

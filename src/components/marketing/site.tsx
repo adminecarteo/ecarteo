@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { getOffers } from './content';
 import { useLocale } from '@/lib/locale-context';
 import { LanguageSwitcher } from '@/components/language-switcher';
@@ -54,6 +54,22 @@ export function MarketingShell({
   children: ReactNode;
 }) {
   const { locale, copy } = useLocale();
+  const mobileMenu = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const menu = mobileMenu.current;
+    function closeOutside(event: Event) {
+      if (menu?.open && event.target instanceof Node && !menu.contains(event.target))
+        menu.open = false;
+    }
+    // WebKit can blur the summary before it dispatches a tap to a menu link.
+    // Dismiss only when the pointer or keyboard focus actually moves outside.
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('focusin', closeOutside);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('focusin', closeOutside);
+    };
+  }, []);
   return (
     <div className={styles.site} lang={locale}>
       <div className={styles.pageFrame}>
@@ -92,15 +108,12 @@ export function MarketingShell({
               </Link>
             </div>
             <details
+              ref={mobileMenu}
               className={styles.mobileNav}
               onKeyDown={(event) => {
                 if (event.key !== 'Escape' || !event.currentTarget.open) return;
                 event.currentTarget.open = false;
                 event.currentTarget.querySelector('summary')?.focus();
-              }}
-              onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget))
-                  event.currentTarget.open = false;
               }}
             >
               <summary>

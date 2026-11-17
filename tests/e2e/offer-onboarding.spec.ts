@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 // This file exercises private, single-use links in the local Mailpit test.
 test.use({ trace: 'off', screenshot: 'off' });
 
-test('offer selection remains visible through signup and the existing account sign-in link', async ({
+test('offer selection survives switching between signup, sign-in and password recovery', async ({
   page,
 }) => {
   await page.goto('/offres');
@@ -15,7 +15,15 @@ test('offer selection remains visible through signup and the existing account si
   await page.getByRole('button', { name: 'FR — Français' }).click();
   await expect(page.getByText(/Offre choisie : Audit Flash/)).toBeVisible();
   await page.getByRole('link', { name: 'Se connecter', exact: true }).click();
-  await expect(page).toHaveURL(/next=%2Fapp%2Frequests%3Foffer%3Dflash$/);
+  const signInUrl = /\/login\?next=%2Fapp%2Frequests%3Foffer%3Dflash$/;
+  await expect(page).toHaveURL(signInUrl);
+  await page.getByRole('link', { name: 'Mot de passe oublié ?' }).click();
+  await page.getByRole('link', { name: 'Retour à la connexion' }).click();
+  await expect(page).toHaveURL(signInUrl);
+  await page.getByRole('link', { name: 'Créer un compte' }).click();
+  await expect(page.getByText(/Offre choisie : Audit Flash/)).toBeVisible();
+  await page.getByRole('link', { name: 'Se connecter', exact: true }).click();
+  await expect(page).toHaveURL(signInUrl);
 });
 
 test('expired links lead directly to separate confirmation and password recovery forms', async ({
