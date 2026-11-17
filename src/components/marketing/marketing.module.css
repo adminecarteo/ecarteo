@@ -10,6 +10,7 @@
 .site {
   --marketing-navy: #181b52;
   --marketing-cyan: #27d4d7;
+  --marketing-teal-text: #086f74;
   --marketing-ink: #12172d;
   --marketing-muted: #4b5570;
   --marketing-line: #dce2eb;
@@ -511,7 +512,7 @@
 }
 
 .sectionLabel {
-  color: #0a8589;
+  color: var(--marketing-teal-text);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.03em;
@@ -620,7 +621,7 @@
 }
 
 .rolesGrid article > span {
-  color: #0a8589;
+  color: var(--marketing-teal-text);
   font-size: 12px;
   font-weight: 600;
 }
@@ -672,7 +673,7 @@
 }
 
 .offerScope {
-  color: #0a8589;
+  color: var(--marketing-teal-text);
   font-size: 13px;
   font-weight: 600;
 }
