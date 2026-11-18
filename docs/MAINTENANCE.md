@@ -11,11 +11,13 @@ The deployed app uses Supabase project `hghlfdhzfxllcooaglzg`. The scheduled run
 3. Deploy the release containing the maintenance endpoint. Confirm the release is live in Render.
 4. In the [repository’s Actions settings](https://github.com/adminecarteo/ecarteo/settings/secrets/actions), create these repository settings. Enter each token in the Secrets tab.
 
-| Kind     | Name                       | Value                                     |
-| -------- | -------------------------- | ----------------------------------------- |
-| Secret   | `PRODUCTION_HEALTH_TOKEN`  | Render’s `OPS_HEALTH_TOKEN`               |
-| Secret   | `PRODUCTION_CLEANUP_TOKEN` | Render’s `OPS_CLEANUP_TOKEN`              |
-| Variable | `PRODUCTION_APP_ORIGIN`    | `https://ecarteo-production.onrender.com` |
+| Kind     | Name                       | Value                        |
+| -------- | -------------------------- | ---------------------------- |
+| Secret   | `PRODUCTION_HEALTH_TOKEN`  | Render’s `OPS_HEALTH_TOKEN`  |
+| Secret   | `PRODUCTION_CLEANUP_TOKEN` | Render’s `OPS_CLEANUP_TOKEN` |
+| Variable | `PRODUCTION_APP_ORIGIN`    | `https://ecarteo.fr`         |
+
+The repository variable was switched to the root after HTTPS and application readiness passed on 18 November 2026. The read-only [maintenance preview](https://github.com/adminecarteo/ecarteo/actions/runs/44315814516), run with `apply=false`, succeeded from GitHub using normal DNS. See [migration evidence](ROOT-DOMAIN-MIGRATION.md) for the separate local DNS-cache limitation.
 
 ## Smoke test
 

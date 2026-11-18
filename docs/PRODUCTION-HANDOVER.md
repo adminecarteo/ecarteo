@@ -4,7 +4,7 @@
 
 | Environment | Application                                                               | Supabase project (Paris)                                                            | Render service (Frankfurt)                                                      |
 | ----------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| Production  | [Sign in](https://ecarteo-production.onrender.com/login)                  | [hghlfdhzfxllcooaglzg](https://supabase.com/dashboard/project/hghlfdhzfxllcooaglzg) | [Production service](https://dashboard.render.com/web/srv-dbtfv3ec6qcc73942dng) |
+| Production  | [Sign in](https://ecarteo.fr/login)                                       | [hghlfdhzfxllcooaglzg](https://supabase.com/dashboard/project/hghlfdhzfxllcooaglzg) | [Production service](https://dashboard.render.com/web/srv-dbtfv3ec6qcc73942dng) |
 | Staging     | [Test the audit journey](https://ecarteo-staging-zy4j.onrender.com/login) | [ikfxhhcxcmrgfuwxpjpr](https://supabase.com/dashboard/project/ikfxhhcxcmrgfuwxpjpr) | [Staging service](https://dashboard.render.com/web/srv-dbtdnv0ae00c73af50rg)    |
 
 Both environments use free instances. Render may take time to wake up after inactivity. Both web services share the workspace’s free instance-hour allowance. The admin is `admin-dev@ecarteo.fr`. The setup computer holds its production password in the owner-readable, Git-ignored `.env.production-owner`. The three staging passwords are in `.env.e2e.hosted-staging`. Store production credentials in Intertrad’s private password manager. Run demo audits on staging. [Render Free limits](https://render.com/docs/free)
@@ -17,11 +17,17 @@ Application commit `313c8bf29083355daf7bed85b2bcc9f717c57429` was deployed first
 - Production owner sign-in through the app returned an active quality profile. Database, schema and private Storage readiness passed. French and English public pages, signup and the confirmation resend route returned HTTP 200. A small warm public smoke test completed nine requests at concurrency three. Higher-volume capacity acceptance requires Intertrad’s traffic target.
 - The daily GitHub workflow is registered for 04:37 UTC. Its first live manual run authenticated to production, checked readiness and previewed expired uploads successfully. [Maintenance run](https://github.com/adminecarteo/ecarteo/actions/runs/43875347838)
 
-## Connect app.ecarteo.fr
+## Production root-domain cutover
 
-1. In the one.com DNS panel for `ecarteo.fr`, the DNS manager creates a **CNAME** with host **app**, value **ecarteo-production.onrender.com**, and the default TTL. Preserve the domain’s existing website and mail records.
-2. Check `dig +short CNAME app.ecarteo.fr`. In the production Render service, open **Settings → Custom Domains** and verify `app.ecarteo.fr`. Wait for Render’s certificate to become active and for `https://app.ecarteo.fr/api/health` to return HTTP 200. [Render custom domains](https://render.com/docs/custom-domains)
-3. Coordinate the hostname switch. Change production `APP_URL` on Render to `https://app.ecarteo.fr`. Set Supabase Auth **Site URL** to that same origin. Allow exactly `https://app.ecarteo.fr/auth/callback` and `https://app.ecarteo.fr/auth/callback?next=/reset-password`. Change the GitHub Actions variable `PRODUCTION_APP_ORIGIN` and the private production configuration to the new origin, and deploy. Verify signup, recovery, sign-in and private readiness there. Use the assigned Render URL until the switch is complete.
+The approved production address is **https://ecarteo.fr**; `www.ecarteo.fr` redirects to it. On 18 November 2026, the manager applied the root A record `216.24.57.1` and `www` CNAME `ecarteo-production.onrender.com`, with no conflicting apex/www IPv6 address. Both hostnames are verified on the existing production Render service. The previous `app.ecarteo.fr` custom hostname has been retired, keeping the Render total at two domains and within the free allowance. No one.com redirect hosting is being installed.
+
+The root cutover passed certificate-validating HTTP checks on 18 November 2026. TLS was valid for both hostnames at 14:32 Paris time. Commit `067f6f003df2550ba53a7a279ee5f6f58539db81` is live as Render deployment `dep-dbuqibbrjlhs73b35hj0`. Render `APP_URL`, Supabase Site URL and its two exact root callback URLs are configured for `https://ecarteo.fr`; SMTP was left unchanged.
+
+Root/www HTTP and HTTPS requests reached the root with UTM values retained. Client and administrator login, identity, dashboard, sign-out, health and private readiness passed. An actual recovery email arrived at `zain@intertrad.fr` from `admin-dev@ecarteo.fr` at 14:35 Paris time; its root-domain link opened the correct client's reset form. Passwords were not changed. A fresh signup confirmation email was not issued after this cutover. The root-origin [maintenance preview](https://github.com/adminecarteo/ecarteo/actions/runs/44315814516) also passed from GitHub's network using normal DNS.
+
+The setup computer's upstream resolver still cached the old one.com IP during testing, so its HTTP acceptance requests explicitly resolved the root to Render's IP while validating the certificate normally. Manual browser acceptance on that computer remained blocked by this local DNS cache. See the precise coverage and propagation note in [Root-domain migration](ROOT-DOMAIN-MIGRATION.md).
+
+Existing accounts, passwords and production data stay in the same Supabase project. Users need to sign in again at the new address. Old `app.ecarteo.fr` bookmarks and email links no longer work; request fresh confirmation/recovery emails from the root.
 
 ## Enable owner-approved mail
 
