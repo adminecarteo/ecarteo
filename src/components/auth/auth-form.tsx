@@ -124,11 +124,8 @@ export function AuthForm({
     }
     return data;
   }
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy || !hydrated || !configured) return;
+  function validate(form: HTMLFormElement) {
     // Read the actual inputs so text typed or autofilled before hydration is preserved.
-    const form = event.currentTarget;
     const fields = new FormData(form);
     const email = String(fields.get('email') ?? '').trim();
     const password = String(fields.get('password') ?? '');
@@ -150,8 +147,8 @@ export function AuthForm({
             ? { action: mode, email }
             : { action: mode, password, confirmPassword };
     const parsed = getAuthInputSchema(locale).safeParse(input);
+    const errors: Record<string, string> = {};
     if (!parsed.success) {
-      const errors: Record<string, string> = {};
       for (const issue of parsed.error.issues)
         errors[String(issue.path[0] || 'form')] ||= [
           'invalid_type',
@@ -160,6 +157,22 @@ export function AuthForm({
         ].includes(issue.code)
           ? text('fields')
           : issue.message;
+    }
+    return { parsed, errors };
+  }
+  function revalidate(event: FormEvent<HTMLFormElement>) {
+    // Refresh validation after a failed submission, including dependent fields
+    // such as confirmation when the original password changes. Keep provider errors.
+    if (busy || !result.fieldErrors || !Object.keys(result.fieldErrors).length) return;
+    const { parsed, errors } = validate(event.currentTarget);
+    setResult(parsed.success ? {} : { error: text('fields'), fieldErrors: errors });
+  }
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || !hydrated || !configured) return;
+    const form = event.currentTarget;
+    const { parsed, errors } = validate(form);
+    if (!parsed.success) {
       setResult({ error: text('fields'), fieldErrors: errors });
       document.getElementById(`auth-${Object.keys(errors)[0]}`)?.focus();
       return;
@@ -168,7 +181,7 @@ export function AuthForm({
     setResult({});
     try {
       const data = await send(parsed.data);
-      if (mode === 'signup' && data.message) setConfirmationEmail(email);
+      if (parsed.data.action === 'signup' && data.message) setConfirmationEmail(parsed.data.email);
       setResult(data);
       if (data.error || data.message) {
         for (const name of ['password', 'confirmPassword']) {
@@ -342,7 +355,15 @@ export function AuthForm({
           </Link>
         </div>
       ) : (
-        <form method="post" action="/api/auth" onSubmit={submit} noValidate aria-busy={busy}>
+        <form
+          method="post"
+          action="/api/auth"
+          onSubmit={submit}
+          onInput={revalidate}
+          onBlur={revalidate}
+          noValidate
+          aria-busy={busy}
+        >
           <noscript>
             <p className={styles.error}>
               {copy(

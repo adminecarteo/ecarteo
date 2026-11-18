@@ -1,10 +1,10 @@
 import { defineConfig } from '@playwright/test';
 import base from './playwright.config';
 
-// The browser intercepts only the protected bootstrap responses. No provider or
+// The browser intercepts protected bootstrap and auth responses. No provider or
 // backend process is required, and production authorization code stays intact.
 export default defineConfig(base, {
-  testMatch: 'frontend-bootstrap.spec.ts',
+  testMatch: ['frontend-bootstrap.spec.ts', 'auth-validation.spec.ts'],
   outputDir: './test-results/frontend-bootstrap',
   use: { ...base.use, baseURL: 'http://127.0.0.1:3110' },
   webServer: {
