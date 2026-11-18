@@ -33,7 +33,7 @@ jobs:
           import { setTimeout as wait } from 'node:timers/promises';
 
           const { ORIGIN, HEALTH_TOKEN, CLEANUP_TOKEN, APPLY } = process.env;
-          if (!['https://ecarteo-production.onrender.com', 'https://app.ecarteo.fr'].includes(ORIGIN)) {
+          if (!['https://ecarteo-production.onrender.com', 'https://app.ecarteo.fr', 'https://ecarteo.fr'].includes(ORIGIN)) {
             throw Error('Set PRODUCTION_APP_ORIGIN to a reviewed Écartéo production origin.');
           }
           if (HEALTH_TOKEN?.length < 32 || !HEALTH_TOKEN || CLEANUP_TOKEN?.length < 32 ||
