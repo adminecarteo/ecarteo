@@ -462,7 +462,7 @@ export default function Reports() {
             ? locale === 'fr'
               ? 'Ce rapport est indisponible.'
               : 'This report is unavailable.'
-            : t('noReport')}
+            : t(actor.role === 'client' ? 'noClientReport' : 'noReport')}
         </EmptyState>
       ) : (
         <div className="report">

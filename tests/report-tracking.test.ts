@@ -53,6 +53,29 @@ function clientWorkspace() {
 }
 
 describe('client report follow-up', () => {
+  it.each(['fr', 'en'] as const)(
+    'shows awaiting-publication guidance to clients and scoring guidance to quality in %s',
+    (locale) => {
+      clientWorkspace();
+      Object.assign(context.current, {
+        state: { ...createSeedState(), missions: [] },
+        selectedId: undefined,
+        locale,
+        t: translate.bind(null, locale),
+        tx: localize.bind(null, locale),
+      });
+
+      const clientHtml = renderToStaticMarkup(createElement(Reports));
+      expect(clientHtml).toContain(translate(locale, 'noClientReport'));
+      expect(clientHtml).not.toContain(translate(locale, 'noReport'));
+
+      context.current.actor = { role: 'qualite' };
+      const qualityHtml = renderToStaticMarkup(createElement(Reports));
+      expect(qualityHtml).toContain(translate(locale, 'noReport'));
+      expect(qualityHtml).not.toContain(translate(locale, 'noClientReport'));
+    },
+  );
+
   it.each([
     ['fr', 'Le seuil de conformité est de 3/4.', 'Réponse après 17 minutes.'],
     ['en', 'The compliance threshold is 3/4.', 'Response after 17 minutes.'],

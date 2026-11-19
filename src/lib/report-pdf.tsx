@@ -29,7 +29,8 @@ const createStyles = (han: boolean) =>
       fontSize: 10,
       fontFamily: han ? ['Helvetica', 'EcarteoHan'] : 'Helvetica',
       color: '#12172D',
-      lineHeight: 1.5,
+      // Use font metrics: react-pdf resolves inherited lineHeight before font-size
+      // overrides, then multiplies it again when paginating dynamic footers.
     },
     header: { backgroundColor: '#181B52', color: '#FFFFFF', padding: 22, marginBottom: 22 },
     brand: { color: '#27D4D7', fontSize: 11, letterSpacing: 3, marginBottom: 16 },
@@ -37,7 +38,6 @@ const createStyles = (han: boolean) =>
       fontSize: 24,
       fontFamily: han ? ['Helvetica-Bold', 'EcarteoHan'] : 'Helvetica-Bold',
       marginBottom: 12,
-      lineHeight: 1.2,
     },
     meta: { fontSize: 9, color: '#E2E5FA', marginTop: 3 },
     score: {
