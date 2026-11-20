@@ -3,6 +3,7 @@ Description=Create and verify an encrypted Ecarteo database and evidence backup
 Wants=network-online.target
 After=network-online.target
 RequiresMountsFor=/mnt/ecarteo-backups
+OnFailure=ecarteo-alert@backup_failed.service
 
 [Service]
 Type=oneshot

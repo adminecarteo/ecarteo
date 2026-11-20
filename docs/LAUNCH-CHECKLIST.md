@@ -18,30 +18,39 @@ A checked item needs evidence and an owner. Implemented code or a skipped test d
 
 ## Hosted release and owner sign-off
 
-The [production handover](PRODUCTION-HANDOVER.md) records the two environments and the actions assigned to Intertrad.
+The [production handover](PRODUCTION-HANDOVER.md) records the two environments and the actions assigned to Intertrad. The current verified application release is `dcf0181`, deployed on 20 November 2026. Split checks below distinguish completed configuration from provider delivery and launch approval that still need evidence.
 
 - [x] Create separate staging/production Supabase projects and record their regions/owners.
 - [x] Set separate production and staging build/runtime credentials.
 - [x] Rotate the staging database password and verify Render reconnection (owner: Intertrad). On 2026-11-16, a fresh SQL login succeeded and Render deployment `dep-dbtgsfnf3r2c73b8bmd0` went live. Its authenticated `/api/ready` check returned HTTP 200 with configuration, database, schema and storage all passing.
 - [x] Apply all seven migrations, confirm application RLS and verify the production private evidence bucket and 10 MiB limit.
-- [ ] Configure SMTP, sender DNS, exact redirects and email confirmation/recovery templates.
+- [x] Configure custom SMTP and exact root-domain auth redirects; verify a delivered root-domain recovery email. Evidence: 18 November cutover acceptance.
+- [x] Verify fresh root-domain signup → delivered confirmation → correct client workspace → fresh password login. On 20 November, the approved QA inbox received the message at **10:09:57 Paris time**; SPF, primary `rsa1` DKIM and DMARC passed. The separate `ed1` signature returned neutral/no-key; this does not claim that every provider signing configuration was remediated.
 - [x] Bootstrap and verify the first production quality administrator (`admin-dev@ecarteo.fr`).
+- [x] Provision and verify production browser login for `operator@ecarteo.fr`, selected under the owner's delegation. The active `operateur` profile sees mission/evidence/library navigation; the quality-only team administration API denied access with HTTP 403. Credentials are stored privately in `.env.production-operator`. Mailbox existence and email delivery to this newly selected address have not been verified.
 - [ ] Nominate customer administrators as real customers onboard.
 - [ ] Repeat signup/recovery/session/disabled-account and invite-replay acceptance against hosted staging with real SMTP delivery.
 - [x] Complete a hosted staging audit, verify the 10 MiB file and PDF, and deny the same report and file to a second customer and unassigned operator.
 - [ ] Test Stripe sandbox checkout, signed webhook retries, cancellation, portal invoices and failed payments if billing is enabled.
 - [ ] Approve commercial plans/prices, tax/invoice settings and support/refund handling before enabling live billing.
 - [ ] Review scenario templates and customer execution permissions; approve actual fieldwork scope.
-- [ ] Deploy on the final domain; verify HTTPS, private cache behavior, 10 MiB uploads and upstream abuse controls.
+- [x] Deploy on `https://ecarteo.fr`, verify root/www HTTPS and production client access, and confirm database/schema/private Storage readiness.
+- [x] Fix and verify PDF score spacing, version/page numbering and client Reports guidance in French/English on the live production release. Temporary QA records were removed after acceptance.
+- [ ] Complete final-origin private-cache/upload/abuse-control acceptance as a recorded release gate; staging 10 MiB/isolation tests already passed.
 - [x] Connect source control/CI and record the deployed commit, migrations, Render deployment ID and previous working release.
 - [ ] Route private readiness/error/backup/cleanup alerts to named responders and test delivery.
 - [x] Schedule daily expired-upload cleanup and verify its production preview from GitHub.
 - [ ] Review unexpected storage orphans and responder delivery during regular operations.
-- [ ] Configure encrypted off-site database+file backups, retention and backup-age alerts.
+- [x] Refresh and verify the encrypted production backup locally. The 20 November snapshot at 09:14:59 UTC passed decrypt, checksum and database-catalog verification; this is a local copy.
+- [ ] Configure an approved encrypted off-site database+file backup destination and verify retrieval, retention and backup-age alerts.
 - [x] Restore a database, accounts, report and evidence into an isolated Supabase stack and verify actual sign-in, file bytes and tenant isolation.
 - [ ] Retrieve a production backup from the approved off-site destination and measure recovery time against Intertrad’s targets.
-- [ ] Approve company identity/contact, privacy notice, customer terms, retention/erasure/hold rules and customer communications.
-- [ ] Review mobile/keyboard/accessibility and test load for intended launch volume on target infrastructure.
+- [x] Verify Intertrad identity/address against the official French registry and prepare French/English publisher, privacy and service-use pages with `admin-dev@ecarteo.fr` as support/privacy contact under the owner's delegated defaults. Source facts and manual privacy operations are recorded in [LEGAL-CONTENT-REVIEW.md](LEGAL-CONTENT-REVIEW.md).
+- [ ] Deploy and verify the public legal routes and signup/footer links. Company-specific contracting, fieldwork permissions, retention/holds and provider arrangements still require appropriate operational and legal review; no compliance certification or unverified commercial terms have been invented.
+- [x] Verify client Reports at desktop and 390 × 844 mobile widths after the 20 November fixes.
+- [x] Complete a bounded warm production smoke check: 19 of 19 GETs passed at up to five concurrent requests, p95 1,599 ms; keyboard, validation and reflow checks passed at 320/390 px. This is not a capacity SLA or a physical-device certification.
+- [ ] Complete physical-device acceptance and any higher-load test against a concrete traffic target on the selected infrastructure.
+- [x] Update handover, domain-cutover notes and this checklist with the verified report-fix release and precise remaining acceptance scope.
 - [ ] Record launch decision, unresolved limitations and escalation owner.
 
 ## Scope boundaries to communicate

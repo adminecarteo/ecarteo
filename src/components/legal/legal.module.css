@@ -1,0 +1,93 @@
+.document {
+  max-width: 80ch;
+  margin-inline: auto;
+  padding: clamp(24px, 5vw, 64px) clamp(20px, 4vw, 48px);
+  overflow-wrap: anywhere;
+}
+
+.introduction {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 28px;
+}
+
+.eyebrow {
+  color: var(--marketing-teal-text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.introduction h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.updated {
+  color: var(--marketing-muted);
+  font-size: 0.85rem;
+}
+
+.documents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  padding-block: 16px;
+  border-block: 1px solid var(--marketing-line);
+}
+
+.document a {
+  color: var(--marketing-teal-text);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.documents a {
+  padding-block: 8px;
+  font-size: 0.9rem;
+}
+
+.documents a[aria-current='page'] {
+  color: var(--marketing-ink);
+  font-weight: 700;
+}
+
+.section {
+  display: grid;
+  gap: 16px;
+  margin-top: 36px;
+  line-height: 1.75;
+}
+
+.section h2,
+.contact h2 {
+  font-size: 1.2rem;
+  line-height: 1.4;
+}
+
+.section ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.section li + li {
+  margin-top: 10px;
+}
+
+.contact {
+  display: grid;
+  gap: 12px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--marketing-line);
+}
+
+.references {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 28px;
+  font-size: 0.85rem;
+}

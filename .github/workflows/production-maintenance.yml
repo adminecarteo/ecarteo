@@ -9,6 +9,10 @@ on:
         description: Remove eligible expired staged uploads
         type: boolean
         default: false
+      test_alert:
+        description: Send a clearly labelled notification test to the configured responder
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -23,6 +27,7 @@ jobs:
     timeout-minutes: 6
     steps:
       - name: Check readiness and expired upload reservations
+        timeout-minutes: 5
         env:
           ORIGIN: ${{ vars.PRODUCTION_APP_ORIGIN }}
           HEALTH_TOKEN: ${{ secrets.PRODUCTION_HEALTH_TOKEN }}
@@ -78,3 +83,28 @@ jobs:
             if (remaining.eligible !== 0) throw Error('Expired reservations remain. Review and rerun.');
           }
           NODE
+  notify:
+    needs: check
+    if: >-
+      ${{ always() && !cancelled() && github.ref == 'refs/heads/main' &&
+          (needs.check.result == 'failure' ||
+           (needs.check.result == 'success' && github.event_name == 'workflow_dispatch' && inputs.test_alert)) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Notify the configured production responder
+        env:
+          ALERT_EVENT: ${{ needs.check.result == 'failure' && 'maintenance_failed' || 'alert_test' }}
+          ALERT_SMTP_HOST: ${{ vars.ALERT_SMTP_HOST }}
+          ALERT_SMTP_PORT: ${{ vars.ALERT_SMTP_PORT }}
+          ALERT_SMTP_USERNAME: ${{ vars.ALERT_SMTP_USERNAME }}
+          ALERT_SMTP_PASSWORD: ${{ secrets.ALERT_SMTP_PASSWORD }}
+          ALERT_FROM: ${{ vars.ALERT_FROM }}
+          ALERT_TO: ${{ vars.ALERT_TO }}
+          ALERT_RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/send-operations-alert.py --event "$ALERT_EVENT"

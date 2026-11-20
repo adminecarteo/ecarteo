@@ -2,7 +2,7 @@
 
 Écartéo’s **Production maintenance** workflow runs once a day at 04:37 UTC on the default branch. It checks the production app, PostgreSQL schema and private evidence bucket. If the checks pass, it previews expired staging reservations and cleans up one batch of up to 100 abandoned uploads. The schedule and manual runs share one concurrency group. Review the result under [GitHub Actions](https://github.com/adminecarteo/ecarteo/actions/workflows/production-maintenance.yml).
 
-The deployed app uses Supabase project `hghlfdhzfxllcooaglzg`. The scheduled runner makes authenticated HTTPS requests to Render. PostgreSQL and Supabase credentials stay on the server. The workflow grants no GitHub token permissions, runs on `main`, and supports only scheduled and manual events. It writes counts and readiness status to the Actions log.
+The deployed app uses Supabase project `hghlfdhzfxllcooaglzg`. The scheduled runner makes authenticated HTTPS requests to Render. PostgreSQL and Supabase credentials stay on the server. The workflow runs on `main` and supports only scheduled and manual events. The check job grants no GitHub token permissions. The separate notification job grants only `contents: read` to check out its script; checkout does not retain Git credentials. The check writes counts and readiness status to the Actions log.
 
 ## Configure the production service
 
@@ -31,6 +31,46 @@ The equivalent manual CLI preview uses your designated GitHub account:
 gh workflow run production-maintenance.yml --ref main --repo adminecarteo/ecarteo -f apply=false
 gh run list --workflow production-maintenance.yml --repo adminecarteo/ecarteo --limit 5
 ```
+
+## Failure notifications
+
+The workflow contains a separate email notification job for readiness or cleanup failures. The HTTP check step has a five-minute deadline within the job's six-minute ceiling; reaching the step deadline fails the check and permits notification. Notifications have their own two-minute deadline so they are not dependent on remaining check-job time. A normal successful run, a skipped check or a cancelled workflow sends nothing. A runner or whole-workflow cancellation can still prevent notification; review Actions directly if a scheduled result is missing. The approved responder is `admin-dev@ecarteo.fr`. Notifications use a separate GitHub Actions secret; saving SMTP settings in Supabase does not configure GitHub automatically.
+
+In the repository's Actions settings, configure the following. Store the password in **Secrets**, never in Variables, a workflow file or a command-line argument.
+
+| Kind     | Name                  | Value                                      |
+| -------- | --------------------- | ------------------------------------------ |
+| Secret   | `ALERT_SMTP_PASSWORD` | The sender mailbox's current SMTP password |
+| Variable | `ALERT_SMTP_HOST`     | `send.one.com`                             |
+| Variable | `ALERT_SMTP_PORT`     | `587`                                      |
+| Variable | `ALERT_SMTP_USERNAME` | `admin-dev@ecarteo.fr`                     |
+| Variable | `ALERT_FROM`          | `admin-dev@ecarteo.fr`                     |
+| Variable | `ALERT_TO`            | `admin-dev@ecarteo.fr`                     |
+
+On the owner's existing setup Mac, an ignored private helper is available as `.env.launch-alerts.command`. It verifies the repository-scoped GitHub account is `adminecarteo`, confirms the recipient and asks for the mailbox password using a hidden Terminal prompt. It verifies SMTP authentication over TLS before placing the password in the encrypted GitHub repository secret. It does not save the password locally, change Supabase, send an email or dispatch a workflow. This helper is local to that machine and is not part of a checkout. Alternatively, enter the values directly in GitHub's settings.
+
+After the configuration and workflow are published, perform an explicit delivery test:
+
+1. Run **Production maintenance** on `main` with **Remove eligible expired staged uploads** unchecked and **Send a clearly labelled notification test to the configured responder** checked.
+2. Confirm readiness and the cleanup preview pass. The notification step should report `smtp_accepted` with event `alert_test`.
+3. Open `admin-dev@ecarteo.fr` and verify receipt of the message titled **[Écartéo production] Alert delivery test / Test de notification**, including the link to that exact Actions run. Check spam if needed. Record the run and receipt time. An SMTP success proves provider acceptance, not inbox delivery.
+
+The equivalent explicit dispatch is:
+
+```sh
+gh workflow run production-maintenance.yml --ref main --repo adminecarteo/ecarteo -f apply=false -f test_alert=true
+```
+
+Messages contain a fixed event description, the public app URL and the Actions run URL. They exclude customer information, raw errors, request URLs and secrets. The sender requires verified TLS on port 587 (STARTTLS) or 465 (implicit TLS); it never falls back to an unencrypted connection. A missing SMTP setting or failed send fails the notification step. Review the Actions result directly until delivery is verified, and after changing the mailbox password update this secret as well as Supabase's SMTP setting.
+
+Offline verification, which sends no email:
+
+```sh
+python3 -B -m unittest discover -s tests -p test_operations_alert.py
+npx vitest run tests/backup-receipt.test.ts
+```
+
+The tests cover TLS-before-authentication, failed TLS blocking login, a single bounded recipient, restricted notification content and backup freshness/integrity failures. They do not establish real SMTP delivery or an active backup schedule. The notification step only covers this workflow; continuous HTTP error monitoring and the private-host backup checks require their own configured runner. See [Operations and recovery](OPERATIONS.md).
 
 ## Recover from a failure
 

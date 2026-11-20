@@ -1,0 +1,17 @@
+[Unit]
+Description=Send a sanitized Ecarteo operations notification (%i)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+TimeoutStartSec=2min
+User=ecarteo-backup
+WorkingDirectory=/opt/ecarteo
+EnvironmentFile=/etc/ecarteo/alerts.env
+ExecStart=/usr/bin/python3 /opt/ecarteo/scripts/send-operations-alert.py --event %i
+UMask=0077
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true

@@ -1,0 +1,17 @@
+[Unit]
+Description=Verify the latest Ecarteo encrypted backup age and checksum
+OnFailure=ecarteo-alert@backup_stale.service
+
+[Service]
+Type=oneshot
+TimeoutStartSec=15min
+User=ecarteo-backup
+WorkingDirectory=/opt/ecarteo
+EnvironmentFile=/etc/ecarteo/backup-check.env
+Environment=ECARTEO_BACKUP_DESTINATION=/mnt/ecarteo-backups
+ExecStart=/usr/bin/node /opt/ecarteo/scripts/check-backup-age.mjs
+UMask=0077
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true

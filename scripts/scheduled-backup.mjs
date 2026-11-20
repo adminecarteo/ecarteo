@@ -9,6 +9,7 @@ import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { evidenceInventory, exportEvidence } from './evidence-backup.mjs';
 import { maintenanceDatabase, safeFailure } from './ops-common.mjs';
+import { writeBackupReceipt } from './lib/backup-receipt.mjs';
 
 process.umask(0o077);
 const scripts = fileURLToPath(new URL('./', import.meta.url));
@@ -85,6 +86,7 @@ try {
   if ((await hash(partial)) !== expectedHash) throw new Error('Destination read-back failed');
   await rename(partial, join(destination, archive));
   partial = undefined;
+  await writeBackupReceipt(destination, { asOf: point, archive, sha256: expectedHash });
   console.log(
     JSON.stringify({ event: 'encrypted_backup', asOf: point, archive, sha256: expectedHash }),
   );
