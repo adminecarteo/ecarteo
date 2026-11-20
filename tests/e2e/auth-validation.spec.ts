@@ -205,6 +205,70 @@ for (const locale of ['en', 'fr'] as const) {
   }
 }
 
+test('a delayed duplicate signup response does not flag an edited email or clear newer credentials', async ({
+  page,
+}) => {
+  const { form, submit, name, company, email, password, confirm, requests } = await signup(page);
+  let releaseDuplicate!: () => void;
+  let requestStarted!: () => void;
+  const duplicatePending = new Promise<void>((resolve) => {
+    releaseDuplicate = resolve;
+  });
+  const firstRequestStarted = new Promise<void>((resolve) => {
+    requestStarted = resolve;
+  });
+  // The later handler replaces the helper's synthetic response for this test.
+  await page.route('**/api/auth', async (route) => {
+    requests.push(route.request().postDataJSON());
+    if (requests.length === 1) {
+      requestStarted();
+      await duplicatePending;
+      await route.fulfill({
+        status: 409,
+        json: {
+          code: 'EMAIL_ALREADY_REGISTERED',
+          error: messages.en.registered,
+          fieldErrors: { email: messages.en.registered },
+        },
+      });
+      return;
+    }
+    await route.fulfill({ json: { message: confirmationMessage } });
+  });
+
+  await submit.click();
+  await firstRequestStarted;
+  await expect(submit).toBeDisabled();
+  await email.fill('qa-new@example.test');
+  await name.fill('QA Customer Updated');
+  await company.fill('Updated Synthetic Organisation');
+  await password.fill(anotherSecret);
+  await confirm.fill(anotherSecret);
+  releaseDuplicate();
+  await expect(submit).toBeEnabled();
+  await expect(form.getByRole('alert')).toHaveCount(0);
+  await expect(page.locator('#auth-email-error')).toHaveCount(0);
+  await expect(email).toHaveAttribute('aria-invalid', 'false');
+  await expect(email).toHaveValue('qa-new@example.test');
+  await expect(name).toHaveValue('QA Customer Updated');
+  await expect(company).toHaveValue('Updated Synthetic Organisation');
+  await expect(password).toHaveValue(anotherSecret);
+  await expect(confirm).toHaveValue(anotherSecret);
+
+  await submit.click();
+  await expect(page.getByRole('status')).toContainText(confirmationMessage);
+  expect(requests).toEqual([
+    expect.objectContaining({ email: 'qa@example.test', password: secret }),
+    expect.objectContaining({
+      email: 'qa-new@example.test',
+      name: 'QA Customer Updated',
+      company: 'Updated Synthetic Organisation',
+      password: anotherSecret,
+      confirmPassword: anotherSecret,
+    }),
+  ]);
+});
+
 test('correcting a password mismatch keeps unrelated invalid fields visible', async ({ page }) => {
   const { form, submit, name, confirm, requests } = await signup(page);
   await name.fill('');

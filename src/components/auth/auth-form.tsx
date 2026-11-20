@@ -194,8 +194,15 @@ export function AuthForm({
     try {
       const data = await send(parsed.data);
       if (parsed.data.action === 'signup' && data.message) setConfirmationEmail(parsed.data.email);
-      if (parsed.data.action === 'signup' && data.code === 'EMAIL_ALREADY_REGISTERED')
-        setRegisteredEmail(parsed.data.email.trim().toLowerCase());
+      if (parsed.data.action === 'signup' && data.code === 'EMAIL_ALREADY_REGISTERED') {
+        const submittedEmail = parsed.data.email.trim().toLowerCase();
+        const currentEmail = String(new FormData(form).get('email') ?? '')
+          .trim()
+          .toLowerCase();
+        // An in-flight response must not label a newly edited address as registered.
+        if (currentEmail !== submittedEmail) return;
+        setRegisteredEmail(submittedEmail);
+      }
       setResult(data);
       if (data.error || data.message) {
         for (const name of ['password', 'confirmPassword']) {
