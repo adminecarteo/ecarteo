@@ -120,3 +120,7 @@ The SaaS extension adds `/`, `/methode`, `/offres`, `/login`, `/signup`, `/forgo
 Authentication uses the same labeled input/reveal/busy/error primitives across modes. The activation notice is an intentional configuration state, not a design placeholder; the submit control stays disabled without a configured provider. No false login success, demo role switch or fictional account is used. Forms do not store passwords in browser persistence. Public offer copy is factual, with no fake customer metrics, testimonials, compliance badges or automatic charges.
 
 Visual verification compared the generated concept with rendered desktop screenshots and inspected 390px mobile layouts. Landing and auth screenshots are QA outputs, not runtime assets.
+
+## Transactional email
+
+`supabase/templates/confirmation.html` and `recovery.html` adapt the public identity to email clients: navy header and text-only Écartéo wordmark, cyan action buttons, white 600px fluid surface and cool background. Inline values map to the existing primary, signal, background, surface, text, muted, border and accent tokens; email clients cannot rely on the app's CSS variables. Arial/Helvetica are intentional email-only fallbacks. Presentation tables and inline styles keep content usable without external fonts, images, scripts or tracking. French appears first, followed by complete English guidance. Each language's action and the shared readable fallback use the same `.SiteURL` / `.TokenHash` authentication link. Changing appearance must preserve the signup/recovery link contract.

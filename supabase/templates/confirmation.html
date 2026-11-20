@@ -1,16 +1,350 @@
 <!doctype html>
-<html lang="fr">
-  <body>
-    <h1>Confirmez votre adresse email</h1>
-    <p>Votre espace Écartéo sera disponible après confirmation de votre adresse.</p>
-    <h2 lang="en">Confirm your email address</h2>
-    <p lang="en">Your Écartéo workspace will be available after you confirm your email address.</p>
-    <p>
-      <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup">
-        Confirmer mon compte / <span lang="en">Confirm my account</span>
-      </a>
-    </p>
-    <p>Si vous n’avez pas demandé ce compte, ignorez ce message.</p>
-    <p lang="en">If you did not request this account, ignore this message.</p>
+<html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Confirmez votre adresse email · Écartéo</title>
+    <style>
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      a:focus-visible {
+        outline: 3px solid #0a8589;
+        outline-offset: 4px;
+      }
+      @media only screen and (max-width: 480px) {
+        .outer {
+          padding: 20px 12px !important;
+        }
+        .inset {
+          padding-left: 20px !important;
+          padding-right: 20px !important;
+        }
+        .email-title {
+          font-size: 28px !important;
+          line-height: 34px !important;
+        }
+      }
+    </style>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f5f8fb;
+      color: #12172d;
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    "
+  >
+    <div
+      aria-hidden="true"
+      style="
+        display: none;
+        font-size: 1px;
+        line-height: 1px;
+        max-height: 0;
+        max-width: 0;
+        opacity: 0;
+        overflow: hidden;
+        mso-hide: all;
+      "
+    >
+      Activez votre espace Écartéo. / Confirm your email to open your Écartéo workspace.
+    </div>
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      bgcolor="#f5f8fb"
+      style="width: 100%; background-color: #f5f8fb; font-family: Arial, Helvetica, sans-serif"
+    >
+      <tr>
+        <td class="outer" align="center" style="padding: 40px 20px">
+          <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              width: 100%;
+              max-width: 600px;
+              border: 1px solid #dce2eb;
+              border-radius: 14px;
+              background-color: #ffffff;
+            "
+            bgcolor="#ffffff"
+          >
+            <tr>
+              <td
+                class="inset"
+                bgcolor="#181b52"
+                style="padding: 28px 40px; background-color: #181b52; border-radius: 13px 13px 0 0"
+              >
+                <a
+                  href="{{ .SiteURL }}"
+                  style="
+                    color: #ffffff;
+                    font-size: 31px;
+                    line-height: 36px;
+                    font-weight: 700;
+                    letter-spacing: -1px;
+                    text-decoration: none;
+                  "
+                  >Écartéo</a
+                >
+                <p style="margin: 8px 0 0; color: #dce2eb; font-size: 13px; line-height: 20px">
+                  Votre espace d’audit <span lang="en">/ Your audit workspace</span>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td class="inset" style="padding: 36px 40px 32px">
+                <p
+                  style="
+                    margin: 0 0 12px;
+                    color: #5a6180;
+                    font-size: 11px;
+                    line-height: 16px;
+                    font-weight: 700;
+                    letter-spacing: 1.2px;
+                  "
+                >
+                  CONFIRMATION DU COMPTE
+                </p>
+                <h1
+                  class="email-title"
+                  style="
+                    margin: 0 0 18px;
+                    color: #181b52;
+                    font-size: 32px;
+                    line-height: 39px;
+                    font-weight: 700;
+                    letter-spacing: -0.7px;
+                  "
+                >
+                  Confirmez votre adresse email.
+                </h1>
+                <p style="margin: 0 0 24px; color: #12172d; font-size: 16px; line-height: 26px">
+                  Bienvenue sur Écartéo. Confirmez votre adresse pour retrouver vos audits, vos
+                  preuves et vos actions dans votre espace client.
+                </p>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="width: 100%"
+                >
+                  <tr>
+                    <td
+                      align="center"
+                      bgcolor="#27d4d7"
+                      style="
+                        background-color: #27d4d7;
+                        border-radius: 8px;
+                        mso-padding-alt: 16px 20px;
+                      "
+                    >
+                      <a
+                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup"
+                        style="
+                          display: block;
+                          padding: 16px 20px;
+                          color: #12172d;
+                          font-size: 16px;
+                          line-height: 22px;
+                          font-weight: 700;
+                          text-align: center;
+                          text-decoration: none;
+                          border-radius: 8px;
+                          mso-padding-alt: 0;
+                        "
+                        >Confirmer mon compte</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin: 18px 0 0; color: #5a6180; font-size: 14px; line-height: 22px">
+                  Ce lien est personnel et utilisable une seule fois.
+                </p>
+                <p style="margin: 12px 0 0; color: #5a6180; font-size: 14px; line-height: 22px">
+                  Si vous n’avez pas demandé ce compte, vous pouvez ignorer ce message.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="inset"
+                lang="en"
+                style="padding: 30px 40px 32px; border-top: 1px solid #dce2eb"
+              >
+                <p
+                  style="
+                    margin: 0 0 12px;
+                    color: #5a6180;
+                    font-size: 11px;
+                    line-height: 16px;
+                    font-weight: 700;
+                    letter-spacing: 1.2px;
+                  "
+                >
+                  ENGLISH
+                </p>
+                <h2
+                  style="
+                    margin: 0 0 14px;
+                    color: #181b52;
+                    font-size: 23px;
+                    line-height: 30px;
+                    font-weight: 700;
+                    letter-spacing: -0.3px;
+                  "
+                >
+                  Confirm your email address.
+                </h2>
+                <p style="margin: 0 0 22px; color: #12172d; font-size: 16px; line-height: 26px">
+                  Welcome to Écartéo. Confirm your address to access your audits, evidence and
+                  actions in your customer workspace.
+                </p>
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="width: 100%"
+                >
+                  <tr>
+                    <td
+                      align="center"
+                      bgcolor="#27d4d7"
+                      style="
+                        background-color: #27d4d7;
+                        border-radius: 8px;
+                        mso-padding-alt: 16px 20px;
+                      "
+                    >
+                      <a
+                        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup"
+                        style="
+                          display: block;
+                          padding: 16px 20px;
+                          color: #12172d;
+                          font-size: 16px;
+                          line-height: 22px;
+                          font-weight: 700;
+                          text-align: center;
+                          text-decoration: none;
+                          border-radius: 8px;
+                          mso-padding-alt: 0;
+                        "
+                        >Confirm my account</a
+                      >
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin: 18px 0 0; color: #5a6180; font-size: 14px; line-height: 22px">
+                  This link is personal and can only be used once.
+                </p>
+                <p style="margin: 12px 0 0; color: #5a6180; font-size: 14px; line-height: 22px">
+                  If you did not request this account, you can ignore this message.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                class="inset"
+                bgcolor="#f5f8fb"
+                style="
+                  padding: 24px 40px;
+                  background-color: #f5f8fb;
+                  border-top: 1px solid #dce2eb;
+                  border-radius: 0 0 13px 13px;
+                "
+              >
+                <p
+                  style="
+                    margin: 0 0 8px;
+                    color: #12172d;
+                    font-size: 13px;
+                    line-height: 21px;
+                    font-weight: 700;
+                  "
+                >
+                  Le bouton ne fonctionne pas ? <span lang="en">/ Button not working?</span>
+                </p>
+                <p style="margin: 0 0 10px; color: #5a6180; font-size: 13px; line-height: 21px">
+                  Copiez ce lien dans votre navigateur.
+                  <span lang="en">/ Copy this link into your browser.</span>
+                </p>
+                <p
+                  style="
+                    margin: 0;
+                    font-size: 12px;
+                    line-height: 20px;
+                    overflow-wrap: anywhere;
+                    word-break: break-all;
+                  "
+                >
+                  <a
+                    href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup"
+                    style="
+                      color: #0a7074;
+                      text-decoration: underline;
+                      overflow-wrap: anywhere;
+                      word-break: break-all;
+                    "
+                    >{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=signup</a
+                  >
+                </p>
+              </td>
+            </tr>
+          </table>
+          <table
+            role="presentation"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="width: 100%; max-width: 600px"
+          >
+            <tr>
+              <td align="center" style="padding: 24px 20px 0">
+                <p style="margin: 0 0 6px; color: #5a6180; font-size: 13px; line-height: 21px">
+                  Une question ? <span lang="en">/ Need help?</span>
+                </p>
+                <p style="margin: 0 0 18px; font-size: 14px; line-height: 22px">
+                  <a
+                    href="mailto:admin-dev@ecarteo.fr"
+                    style="color: #0a7074; font-weight: 700; text-decoration: underline"
+                    >admin-dev@ecarteo.fr</a
+                  >
+                </p>
+                <p style="margin: 0; color: #5a6180; font-size: 12px; line-height: 20px">
+                  Écartéo · Intertrad · Paris, France
+                </p>
+              </td>
+            </tr>
+          </table>
+          <!--[if mso]></td></tr></table><![endif]-->
+        </td>
+      </tr>
+    </table>
   </body>
 </html>
