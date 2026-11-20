@@ -34,6 +34,8 @@ gh run list --workflow production-maintenance.yml --repo adminecarteo/ecarteo --
 
 ## Failure notifications
 
+Production status, 20 November 2026: the GitHub SMTP settings and TLS login were verified. [Run 44713006657](https://github.com/adminecarteo/ecarteo/actions/runs/44713006657) passed readiness/cleanup preview and the explicit notification test. The notification reported `smtp_accepted` for `admin-dev@ecarteo.fr` at **09:42:54 UTC**. The owner reports the message has not yet arrived; delivery remains unresolved and the recipient must verify any received message and its run link. This acceptance covers the configured GitHub workflow, not the unavailable off-site backup host or a continuous error-monitoring service.
+
 The workflow contains a separate email notification job for readiness or cleanup failures. The HTTP check step has a five-minute deadline within the job's six-minute ceiling; reaching the step deadline fails the check and permits notification. Notifications have their own two-minute deadline so they are not dependent on remaining check-job time. A normal successful run, a skipped check or a cancelled workflow sends nothing. A runner or whole-workflow cancellation can still prevent notification; review Actions directly if a scheduled result is missing. The approved responder is `admin-dev@ecarteo.fr`. Notifications use a separate GitHub Actions secret; saving SMTP settings in Supabase does not configure GitHub automatically.
 
 In the repository's Actions settings, configure the following. Store the password in **Secrets**, never in Variables, a workflow file or a command-line argument.

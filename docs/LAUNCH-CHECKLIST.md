@@ -18,7 +18,7 @@ A checked item needs evidence and an owner. Implemented code or a skipped test d
 
 ## Hosted release and owner sign-off
 
-The [production handover](PRODUCTION-HANDOVER.md) records the two environments and the actions assigned to Intertrad. The current verified application release is `dcf0181`, deployed on 20 November 2026. Split checks below distinguish completed configuration from provider delivery and launch approval that still need evidence.
+The [production handover](PRODUCTION-HANDOVER.md) records the two environments and the actions assigned to Intertrad. The current verified application release is `1b5af21`, deployed on 20 November 2026. Split checks below distinguish completed configuration from provider delivery and launch approval that still need evidence.
 
 - [x] Create separate staging/production Supabase projects and record their regions/owners.
 - [x] Set separate production and staging build/runtime credentials.
@@ -36,21 +36,23 @@ The [production handover](PRODUCTION-HANDOVER.md) records the two environments a
 - [ ] Review scenario templates and customer execution permissions; approve actual fieldwork scope.
 - [x] Deploy on `https://ecarteo.fr`, verify root/www HTTPS and production client access, and confirm database/schema/private Storage readiness.
 - [x] Fix and verify PDF score spacing, version/page numbering and client Reports guidance in French/English on the live production release. Temporary QA records were removed after acceptance.
-- [ ] Complete final-origin private-cache/upload/abuse-control acceptance as a recorded release gate; staging 10 MiB/isolation tests already passed.
+- [x] Verify final-origin three-role login/workspace/private-cache behavior, anonymous HTTP 401 and non-admin team HTTP 403 after the 20 November launch release. All 13 post-deployment checks passed at 09:43:51 UTC.
+- [ ] Complete remaining final-origin upload/abuse-control acceptance as a recorded release gate; staging 10 MiB/isolation tests already passed.
 - [x] Connect source control/CI and record the deployed commit, migrations, Render deployment ID and previous working release.
-- [ ] Route private readiness/error/backup/cleanup alerts to named responders and test delivery.
+- [x] Configure GitHub readiness/cleanup failure alerts to `admin-dev@ecarteo.fr` and run the live test. [Run 44713006657](https://github.com/adminecarteo/ecarteo/actions/runs/44713006657) passed checks and notification; SMTP accepted the test at 09:42:54 UTC.
+- [ ] Confirm that test alert reached the responder inbox; the owner reports it has not yet arrived. SMTP acceptance alone does not establish inbox receipt. Continuous error monitoring and off-site backup alerts require their own configured observer/host.
 - [x] Schedule daily expired-upload cleanup and verify its production preview from GitHub.
 - [ ] Review unexpected storage orphans and responder delivery during regular operations.
-- [x] Refresh and verify the encrypted production backup locally. The 20 November snapshot at 09:14:59 UTC passed decrypt, checksum and database-catalog verification; this is a local copy.
+- [x] Refresh and verify the encrypted production backup locally. The final 20 November snapshot at 09:43:13.154 UTC includes the new operator and QA-account deactivation; decrypt, ciphertext/manifest checksums and database-catalog verification passed. The evidence inventory contained zero objects; plaintext verification stayed in memory. This is a local copy.
 - [ ] Configure an approved encrypted off-site database+file backup destination and verify retrieval, retention and backup-age alerts.
 - [x] Restore a database, accounts, report and evidence into an isolated Supabase stack and verify actual sign-in, file bytes and tenant isolation.
 - [ ] Retrieve a production backup from the approved off-site destination and measure recovery time against Intertrad’s targets.
 - [x] Verify Intertrad identity/address against the official French registry and prepare French/English publisher, privacy and service-use pages with `admin-dev@ecarteo.fr` as support/privacy contact under the owner's delegated defaults. Source facts and manual privacy operations are recorded in [LEGAL-CONTENT-REVIEW.md](LEGAL-CONTENT-REVIEW.md).
-- [ ] Deploy and verify the public legal routes and signup/footer links. Company-specific contracting, fieldwork permissions, retention/holds and provider arrangements still require appropriate operational and legal review; no compliance certification or unverified commercial terms have been invented.
+- [x] Deploy and verify the public legal routes and signup/footer links. All 12 live FR/EN route/width combinations passed at 1280/320 px, without empty navigation landmarks, horizontal overflow or captured console warnings/errors. Company-specific contracting, fieldwork permissions, retention/holds and provider arrangements still require appropriate operational and legal review; no compliance certification or unverified commercial terms have been invented.
 - [x] Verify client Reports at desktop and 390 × 844 mobile widths after the 20 November fixes.
 - [x] Complete a bounded warm production smoke check: 19 of 19 GETs passed at up to five concurrent requests, p95 1,599 ms; keyboard, validation and reflow checks passed at 320/390 px. This is not a capacity SLA or a physical-device certification.
 - [ ] Complete physical-device acceptance and any higher-load test against a concrete traffic target on the selected infrastructure.
-- [x] Update handover, domain-cutover notes and this checklist with the verified report-fix release and precise remaining acceptance scope.
+- [x] Update handover, launch status and this checklist with the verified launch release, previous PDF-fix history and precise remaining acceptance scope.
 - [ ] Record launch decision, unresolved limitations and escalation owner.
 
 ## Scope boundaries to communicate
