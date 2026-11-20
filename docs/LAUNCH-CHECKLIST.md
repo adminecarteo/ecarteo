@@ -40,7 +40,7 @@ The [production handover](PRODUCTION-HANDOVER.md) records the two environments a
 - [ ] Complete remaining final-origin upload/abuse-control acceptance as a recorded release gate; staging 10 MiB/isolation tests already passed.
 - [x] Connect source control/CI and record the deployed commit, migrations, Render deployment ID and previous working release.
 - [x] Configure GitHub readiness/cleanup failure alerts to `admin-dev@ecarteo.fr` and run the live test. [Run 44713006657](https://github.com/adminecarteo/ecarteo/actions/runs/44713006657) passed checks and notification; SMTP accepted the test at 09:42:54 UTC.
-- [ ] Confirm that test alert reached the responder inbox; the owner reports it has not yet arrived. SMTP acceptance alone does not establish inbox receipt. Continuous error monitoring and off-site backup alerts require their own configured observer/host.
+- [x] Confirm that test alert reached the responder inbox. On 20 November, the owner supplied the received bilingual message and its exact workflow link for run `44713006657`, confirming delivery to the designated responder. Continuous error monitoring and off-site backup alerts still require their own configured observer/host.
 - [x] Schedule daily expired-upload cleanup and verify its production preview from GitHub.
 - [ ] Review unexpected storage orphans and responder delivery during regular operations.
 - [x] Refresh and verify the encrypted production backup locally. The final 20 November snapshot at 09:43:13.154 UTC includes the new operator and QA-account deactivation; decrypt, ciphertext/manifest checksums and database-catalog verification passed. The evidence inventory contained zero objects; plaintext verification stayed in memory. This is a local copy.
