@@ -5,6 +5,7 @@ import { authText } from './auth-copy';
 
 export type AuthMode = 'login' | 'signup' | 'forgot' | 'reset' | 'resend';
 export type AuthResult = {
+  code?: string;
   error?: string;
   fieldErrors?: Record<string, string>;
   message?: string;

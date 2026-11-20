@@ -257,6 +257,18 @@
   border: 1px solid #edbcb8;
   margin: 0;
 }
+.errorMessage {
+  margin: 0;
+}
+.recoveryLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 10px;
+}
+.recoveryLinks a {
+  color: inherit;
+}
 .status {
   background: #e1f3ea;
   color: #12613e;

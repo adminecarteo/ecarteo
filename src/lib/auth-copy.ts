@@ -47,6 +47,10 @@ export const authMessages = {
     'La demande n’a pas pu aboutir. Réessayez ou connectez-vous si vous avez déjà un compte.',
     'The request could not be completed. Try again or sign in if you already have an account.',
   ],
+  emailRegistered: [
+    'Cette adresse email est déjà enregistrée. Connectez-vous ou réinitialisez votre mot de passe.',
+    'This email is already registered. Sign in or reset your password.',
+  ],
   signupSent: [
     'Si cette adresse peut être inscrite, un email de confirmation lui a été envoyé. Ouvrez le lien pour activer votre espace.',
     'If this address can be registered, a confirmation email has been sent. Open the link to activate your workspace.',

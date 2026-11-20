@@ -69,6 +69,22 @@ export async function POST(request: Request) {
           emailRedirectTo: `${siteOrigin()}/auth/callback`,
         },
       });
+      // The owner explicitly chose to identify registered emails at signup.
+      // Supabase may report a duplicate as an error or an obfuscated user.
+      const duplicateError =
+        error &&
+        (error.status === 400 || error.status === 422) &&
+        (error.code === 'user_already_exists' || error.code === 'email_exists');
+      const obfuscatedUser = !error && !data.session && data.user?.identities?.length === 0;
+      if (duplicateError || obfuscatedUser)
+        return json(
+          {
+            code: 'EMAIL_ALREADY_REGISTERED',
+            error: text('emailRegistered'),
+            fieldErrors: { email: text('emailRegistered') },
+          },
+          409,
+        );
       if (error)
         return json(
           {

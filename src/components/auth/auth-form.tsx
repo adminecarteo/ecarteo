@@ -104,6 +104,7 @@ export function AuthForm({
   const feedback = (message: string | undefined) => translateAuthFeedback(message, locale);
   const hydrated = useSyncExternalStore(subscribeHydration, clientHydrated, serverHydrated);
   const [confirmationEmail, setConfirmationEmail] = useState('');
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const [visible, setVisible] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AuthResult>({});
@@ -161,6 +162,17 @@ export function AuthForm({
     return { parsed, errors };
   }
   function revalidate(event: FormEvent<HTMLFormElement>) {
+    if (result.code === 'EMAIL_ALREADY_REGISTERED') {
+      const email = String(new FormData(event.currentTarget).get('email') ?? '')
+        .trim()
+        .toLowerCase();
+      // Blurring a field to follow a recovery link must not remove that link.
+      if (email !== registeredEmail) {
+        setResult({});
+        setRegisteredEmail('');
+      }
+      return;
+    }
     // Refresh validation after a failed submission, including dependent fields
     // such as confirmation when the original password changes. Keep provider errors.
     if (busy || !result.fieldErrors || !Object.keys(result.fieldErrors).length) return;
@@ -182,6 +194,8 @@ export function AuthForm({
     try {
       const data = await send(parsed.data);
       if (parsed.data.action === 'signup' && data.message) setConfirmationEmail(parsed.data.email);
+      if (parsed.data.action === 'signup' && data.code === 'EMAIL_ALREADY_REGISTERED')
+        setRegisteredEmail(parsed.data.email.trim().toLowerCase());
       setResult(data);
       if (data.error || data.message) {
         for (const name of ['password', 'confirmPassword']) {
@@ -373,9 +387,17 @@ export function AuthForm({
             </p>
           </noscript>
           {result.error && (
-            <p className={styles.error} role="alert">
-              {feedback(result.error)}
-            </p>
+            <div className={styles.error} role="alert">
+              <p className={styles.errorMessage}>{feedback(result.error)}</p>
+              {mode === 'signup' && result.code === 'EMAIL_ALREADY_REGISTERED' && (
+                <div className={styles.recoveryLinks}>
+                  <Link href={authPagePath('/login', next)}>{copy('Se connecter', 'Sign in')}</Link>
+                  <Link href={authPagePath('/forgot-password', next)}>
+                    {copy('Réinitialiser le mot de passe', 'Reset password')}
+                  </Link>
+                </div>
+              )}
+            </div>
           )}
           {mode === 'signup' && (
             <>

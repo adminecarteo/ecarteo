@@ -11,18 +11,26 @@ const messages = {
     language: 'EN — English',
     mismatch: 'The passwords do not match.',
     summary: 'Check the highlighted fields.',
+    registered: 'This email is already registered. Sign in or reset your password.',
+    signIn: 'Sign in',
+    resetPassword: 'Reset password',
   },
   fr: {
     language: 'FR — Français',
     mismatch: 'Les mots de passe ne correspondent pas.',
     summary: 'Vérifiez les champs indiqués.',
+    registered:
+      'Cette adresse email est déjà enregistrée. Connectez-vous ou réinitialisez votre mot de passe.',
+    signIn: 'Se connecter',
+    resetPassword: 'Réinitialiser le mot de passe',
   },
 };
 
 async function signup(
   page: Page,
   locale: 'en' | 'fr' = 'en',
-  response = { status: 200, json: { message: confirmationMessage } as Record<string, string> },
+  response = { status: 200, json: { message: confirmationMessage } as Record<string, unknown> },
+  next?: string,
 ) {
   const requests: Record<string, unknown>[] = [];
   // Every auth request is intercepted: these UI checks create no accounts or emails.
@@ -30,7 +38,7 @@ async function signup(
     requests.push(route.request().postDataJSON());
     await route.fulfill(response);
   });
-  await page.goto('/signup');
+  await page.goto(next ? `/signup?next=${encodeURIComponent(next)}` : '/signup');
   await page.getByRole('button', { name: messages[locale].language, exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', locale);
   test.skip(
@@ -106,6 +114,95 @@ for (const locale of ['en', 'fr'] as const) {
     ]);
     expect(errors).toEqual([]);
   });
+}
+
+for (const locale of ['en', 'fr'] as const) {
+  test(`${locale}: duplicate signup keeps account guidance until the email changes`, async ({
+    page,
+  }) => {
+    const response = {
+      status: 409,
+      json: {
+        code: 'EMAIL_ALREADY_REGISTERED',
+        error: messages[locale].registered,
+        fieldErrors: { email: messages[locale].registered },
+      } as Record<string, unknown>,
+    };
+    const { form, submit, name, email, password, confirm, requests } = await signup(
+      page,
+      locale,
+      response,
+    );
+    await submit.click();
+    const alert = form.getByRole('alert');
+    await expect(alert).toContainText(messages[locale].registered);
+    await expect(email).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('#auth-email-error')).toHaveText(messages[locale].registered);
+    await expect(password).toHaveValue('');
+    await expect(confirm).toHaveValue('');
+    await expect(
+      page.getByRole('heading', { name: /Check your inbox|Consultez votre messagerie/ }),
+    ).toHaveCount(0);
+
+    await email.focus();
+    await email.press('Tab');
+    await expect(alert).toContainText(messages[locale].registered);
+    await name.fill('QA Customer Updated');
+    await password.fill(anotherSecret);
+    await confirm.fill(anotherSecret);
+    await confirm.press('Tab');
+    await expect(alert).toContainText(messages[locale].registered);
+    await email.fill('QA@EXAMPLE.TEST');
+    await expect(email).toHaveAttribute('aria-invalid', 'true');
+    await expect(alert).toContainText(messages[locale].registered);
+    expect(requests).toHaveLength(1);
+
+    await email.fill('qa-new@example.test');
+    await expect(email).toHaveAttribute('aria-invalid', 'false');
+    await expect(page.locator('#auth-email-error')).toHaveCount(0);
+    await expect(alert).toHaveCount(0);
+    response.status = 200;
+    response.json = { message: confirmationMessage };
+    await submit.click();
+    await expect(page.getByRole('status')).toContainText(confirmationMessage);
+    expect(requests).toEqual([
+      expect.objectContaining({ email: 'qa@example.test' }),
+      expect.objectContaining({ email: 'qa-new@example.test', password: anotherSecret }),
+    ]);
+  });
+
+  for (const destination of ['login', 'forgot-password'] as const) {
+    test(`${locale}: duplicate signup ${destination} link survives blur and preserves the destination`, async ({
+      page,
+    }) => {
+      const next = '/app/requests?view=pending';
+      const { form, submit, email, requests } = await signup(
+        page,
+        locale,
+        {
+          status: 409,
+          json: {
+            code: 'EMAIL_ALREADY_REGISTERED',
+            error: messages[locale].registered,
+            fieldErrors: { email: messages[locale].registered },
+          },
+        },
+        next,
+      );
+      await submit.click();
+      const link = form.getByRole('alert').getByRole('link', {
+        name: destination === 'login' ? messages[locale].signIn : messages[locale].resetPassword,
+        exact: true,
+      });
+      const path = `/${destination}?next=${encodeURIComponent(next)}`;
+      await expect(link).toHaveAttribute('href', path);
+      // Clicking from an input triggers blur before the link's click handler.
+      await email.focus();
+      await link.click();
+      await expect(page).toHaveURL((url) => `${url.pathname}${url.search}` === path);
+      expect(requests).toHaveLength(1);
+    });
+  }
 }
 
 test('correcting a password mismatch keeps unrelated invalid fields visible', async ({ page }) => {

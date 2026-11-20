@@ -282,6 +282,64 @@ describe('authentication endpoint', () => {
       company_name: 'Test Company',
     });
   });
+  it.each(['fr', 'en'] as const)(
+    '%s: reports an existing signup for explicit provider errors and obfuscated users',
+    async (language) => {
+      for (const result of [
+        { data: null, error: { status: 422, code: 'user_already_exists' } },
+        { data: null, error: { status: 400, code: 'email_exists' } },
+        { data: { session: null, user: { id: 'obfuscated', identities: [] } }, error: null },
+      ]) {
+        mocks.signUp.mockResolvedValue(result);
+        const response = await POST(request(authInputs.signup, undefined, language));
+        expect(response.status).toBe(409);
+        expect(response.headers.get('cache-control')).toContain('no-store');
+        const message =
+          language === 'fr'
+            ? 'Cette adresse email est déjà enregistrée. Connectez-vous ou réinitialisez votre mot de passe.'
+            : 'This email is already registered. Sign in or reset your password.';
+        expect(await response.json()).toEqual({
+          code: 'EMAIL_ALREADY_REGISTERED',
+          error: message,
+          fieldErrors: { email: message },
+        });
+      }
+    },
+  );
+  it('does not mistake pending confirmation, missing identities or a live session for a duplicate', async () => {
+    for (const user of [{ id: 'new', identities: [{ provider: 'email' }] }, { id: 'new' }]) {
+      mocks.signUp.mockResolvedValue({ data: { session: null, user }, error: null });
+      const response = await POST(request(authInputs.signup, undefined, 'en'));
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ message: authText('signupSent', 'en') });
+    }
+    mocks.signUp.mockResolvedValue({
+      data: { session: {}, user: { email_confirmed_at: '2026-11-20', identities: [] } },
+      error: null,
+    });
+    const response = await POST(request(authInputs.signup));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ redirect: '/app' });
+  });
+  it('does not detect duplicates from raw messages or override provider failures', async () => {
+    for (const [error, status, key] of [
+      [{ status: 400, message: 'User already registered' }, 400, 'signupFailed'],
+      [{ status: 429, code: 'email_exists' }, 429, 'providerRateLimit'],
+      [{ status: 503, code: 'user_already_exists' }, 503, 'authUnavailable'],
+    ] as const) {
+      mocks.signUp.mockResolvedValue({
+        data: { session: null, user: { identities: [] } },
+        error,
+      });
+      const response = await POST(request(authInputs.signup, undefined, 'en'));
+      expect(response.status).toBe(status);
+      expect(await response.json()).toEqual({ error: authText(key, 'en') });
+    }
+    mocks.limit.mockResolvedValue(false);
+    mocks.signUp.mockClear();
+    expect((await POST(request(authInputs.signup))).status).toBe(429);
+    expect(mocks.signUp).not.toHaveBeenCalled();
+  });
   it('passes only allowlisted offer preferences and never accepts a privileged role or external destination as an offer', async () => {
     mocks.signUp.mockResolvedValue({
       data: { session: {}, user: { email_confirmed_at: '2026-11-16' } },
