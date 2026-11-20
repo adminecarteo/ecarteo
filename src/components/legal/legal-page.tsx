@@ -61,34 +61,35 @@ export function LegalPage({ kind, publisher }: { kind: LegalPageKind; publisher:
           <a href="mailto:admin-dev@ecarteo.fr">admin-dev@ecarteo.fr</a>
           <p>INTERTRAD · 91 rue du Faubourg Saint-Honoré, 75008 Paris, France</p>
         </section>
-        <nav
-          className={styles.references}
-          aria-label={copy(
-            'Sources et informations complémentaires',
-            'Sources and further information',
-          )}
-        >
-          {kind === 'publisher' && (
-            <a href="https://annuaire-entreprises.data.gouv.fr/entreprise/intertrad-827584566">
-              {copy('Intertrad : Annuaire des entreprises', 'Intertrad: French business register')}
-            </a>
-          )}
-          {kind !== 'terms' && (
-            <>
-              <a href="https://render.com/terms">
-                {copy('Informations légales Render', 'Render legal information')}
+        {kind !== 'terms' && (
+          <nav
+            className={styles.references}
+            aria-label={copy(
+              'Sources et informations complémentaires',
+              'Sources and further information',
+            )}
+          >
+            {kind === 'publisher' && (
+              <a href="https://annuaire-entreprises.data.gouv.fr/entreprise/intertrad-827584566">
+                {copy(
+                  'Intertrad : Annuaire des entreprises',
+                  'Intertrad: French business register',
+                )}
               </a>
-              <a href="https://supabase.com/legal/privacy-resources/data-residency-and-transfers-faq">
-                {copy('Supabase : régions et transferts', 'Supabase: regions and transfers')}
-              </a>
-            </>
-          )}
-          {kind === 'privacy' && (
-            <a href="https://www.cnil.fr/fr/mes-demarches/les-droits-pour-maitriser-vos-donnees-personnelles">
-              {copy('CNIL : vos droits', 'CNIL: your rights')}
+            )}
+            <a href="https://render.com/terms">
+              {copy('Informations légales Render', 'Render legal information')}
             </a>
-          )}
-        </nav>
+            <a href="https://supabase.com/legal/privacy-resources/data-residency-and-transfers-faq">
+              {copy('Supabase : régions et transferts', 'Supabase: regions and transfers')}
+            </a>
+            {kind === 'privacy' && (
+              <a href="https://www.cnil.fr/fr/mes-demarches/les-droits-pour-maitriser-vos-donnees-personnelles">
+                {copy('CNIL : vos droits', 'CNIL: your rights')}
+              </a>
+            )}
+          </nav>
+        )}
       </article>
     </MarketingShell>
   );
