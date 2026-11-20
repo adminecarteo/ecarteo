@@ -2,6 +2,14 @@
 
 Prepared 20 November 2026 for the approved free-resource constraint. The live app is https://ecarteo.fr. This is a concrete handover, not a declaration that external dependencies or business approvals are complete.
 
+## Staging SMTP
+
+Production email delivery is verified. Staging project `ikfxhhcxcmrgfuwxpjpr` still showed custom SMTP disabled after reload during final acceptance, despite reported saves. The supported CLI can authenticate, but the separate in-memory configuration-copy helper could not obtain the macOS Keychain credential; it changed no provider settings. Do not mark staging delivery complete from a generic success report alone.
+
+In the prepared Chrome tab under **🧪 Écartéo launch QA**, verify the URL contains that exact staging project reference. The prefilled sender is `admin-dev@ecarteo.fr`, sender name `Écartéo staging`, host `send.one.com`, port `587`, username `admin-dev@ecarteo.fr`. Enter the mailbox password privately and choose **Save changes**. Reload afterward and confirm **Enable custom SMTP** remains enabled. Project branch badges labelled “PRODUCTION” are not a substitute for checking the project reference. If using a fresh tab, open [staging SMTP](https://supabase.com/dashboard/project/ikfxhhcxcmrgfuwxpjpr/auth/smtp) and enter those non-secret settings as well.
+
+Then publish the repository confirmation/recovery templates with `[Staging]` subjects, preserve the staging Site URL, and repeat actual Inbox/link/new-password login acceptance using an approved QA alias. Do not alter production SMTP or real users' passwords. The local `.env.smtp-staging.command` is an alternative private setup helper; its reported success must still be verified against the saved dashboard and delivered messages.
+
 ## Operator mailbox
 
 The owner confirmed that `operator@ecarteo.fr` has not been created. Its Écartéo operator account already exists and login works; a mailbox is required for independent password recovery.

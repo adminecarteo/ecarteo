@@ -2,6 +2,8 @@
 
 Écartéo’s **Production maintenance** workflow samples production every six hours: **04:37, 10:37, 16:37 and 22:37 UTC** on the default branch. Each sample checks the production app, PostgreSQL schema, private evidence bucket and the public landing, login and signup pages. It also previews expired staging reservations. Only the **04:37 UTC** schedule automatically cleans up one batch of up to 100 abandoned uploads; the other scheduled samples are read-only. The schedule and manual runs share one concurrency group. Review the result under [GitHub Actions](https://github.com/adminecarteo/ecarteo/actions/workflows/production-maintenance.yml).
 
+Published as commit `c0a95f1` on 20 November 2026. The first [live manual preview](https://github.com/adminecarteo/ecarteo/actions/runs/44763079398) passed at **15:25:19 UTC**: readiness passed, all three public pages passed, and eligible/removed upload counts were both zero with `apply=false`. No test email was requested; the notification job was correctly skipped on success. This verifies the deployed workflow from GitHub's network, not a scheduled execution at each future time.
+
 The deployed app uses Supabase project `hghlfdhzfxllcooaglzg`. The scheduled runner makes authenticated HTTPS requests to Render. PostgreSQL and Supabase credentials stay on the server. The workflow runs on `main` and supports only scheduled and manual events. Both jobs grant only `contents: read` to check out their scripts; checkout does not retain Git credentials. The check writes counts and bounded status messages to the Actions log. It never logs response bodies, customer data or tokens. Public page requests receive no authorization token or session cookie.
 
 ## Configure the production service
