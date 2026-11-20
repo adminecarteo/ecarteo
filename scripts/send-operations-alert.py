@@ -17,8 +17,8 @@ import sys
 EVENTS = {
     "maintenance_failed": (
         "Maintenance failed / Échec de maintenance",
-        "Production readiness or expired-upload cleanup failed. Review the workflow result.",
-        "Le contrôle de disponibilité ou le nettoyage des dépôts expirés a échoué. Consultez le résultat du workflow.",
+        "Production readiness, a public entry page or expired-upload cleanup failed. Review the workflow result.",
+        "Le contrôle de disponibilité, une page publique ou le nettoyage des dépôts expirés a échoué. Consultez le résultat du workflow.",
     ),
     "backup_failed": (
         "Backup failed / Échec de sauvegarde",
