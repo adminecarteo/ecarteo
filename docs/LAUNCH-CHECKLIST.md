@@ -2,6 +2,8 @@
 
 A checked item needs evidence and an owner. Implemented code or a skipped test does not satisfy a provider-dependent item. Local results are recorded in [VERIFICATION.md](VERIFICATION.md).
 
+Latest operational follow-up: [23 November 2026](LAUNCH-STATUS-2026-11-23.md).
+
 ## Local deliverables
 
 - [x] Landing/method/offers pages and account confirmation/recovery flows.
@@ -30,7 +32,7 @@ The [production handover](PRODUCTION-HANDOVER.md) records the two environments a
 - [x] Provision and verify production browser login for `operator@ecarteo.fr`, selected under the owner's delegation. The active `operateur` profile sees mission/evidence/library navigation; the quality-only team administration API denied access with HTTP 403. Credentials are stored privately in `.env.production-operator`. Mailbox existence and email delivery to this newly selected address have not been verified.
 - [x] Verify current customer administrator coverage. On 20 November at 15:14:42 UTC, all three active non-QA customer organizations had an active client administrator; none were missing one. Nomination remains part of each future onboarding.
 - [x] Complete hosted-staging session/disabled-account/invitation acceptance: all 11 checks passed, including unconfirmed access denial, genuine refresh, logout/refresh-token replay, wrong-user/revoked/expired invitations and concurrent idempotent redemption. Synthetic account deactivated. [Evidence](HOSTED-ACCEPTANCE-2026-11-20.md)
-- [ ] Verify hosted-staging signup/recovery inbox delivery after custom SMTP is persistently configured. Administrative confirmation in the separate hosted API run does not satisfy this item.
+- [x] Verify hosted-staging signup/recovery inbox delivery with persistent custom SMTP. On 23 November, actual designed messages reached the approved Inbox; received links, exact client identity, password update, old-password rejection, new-password API/browser login and recovery replay checks passed. [Follow-up evidence](LAUNCH-STATUS-2026-11-23.md).
 - [x] Retest the redesigned production confirmation and recovery emails end to end. Both reached the approved QA Inbox; actual links, temporary-password update, old-password rejection, new-password browser login and recovery-link reuse rejection passed on 20 November. The QA account was deactivated afterward and its saved session received 403 without workspace data.
 - [x] Complete a hosted staging audit, verify the 10 MiB file and PDF, and deny the same report and file to a second customer and unassigned operator.
 - [ ] Test Stripe sandbox checkout, signed webhook retries, cancellation, portal invoices and failed payments if billing is enabled.
@@ -45,8 +47,9 @@ The [production handover](PRODUCTION-HANDOVER.md) records the two environments a
 - [x] Confirm that test alert reached the responder inbox. On 20 November, the owner supplied the received bilingual message and its exact workflow link for run `44713006657`, confirming delivery to the designated responder. Continuous error monitoring and off-site backup alerts still require their own configured observer/host.
 - [x] Publish six-hour readiness/public-entry sampling while preserving daily-only cleanup. [Live preview 44763079398](https://github.com/adminecarteo/ecarteo/actions/runs/44763079398) passed at 15:25:19 UTC on `c0a95f1`, with all three public pages available and zero eligible/removed uploads. This is periodic sampling, not continuous event/email monitoring.
 - [x] Schedule daily expired-upload cleanup and verify its production preview from GitHub.
-- [ ] Review unexpected storage orphans and responder delivery during regular operations.
-- [x] Refresh and verify the encrypted production backup locally. The latest 20 November snapshot at 15:20:08.502 UTC includes the final QA-account deactivation; decrypt, ciphertext/manifest checksums, database catalog/full-stream decoding and freshness verification passed. The archive is 502,072 bytes with zero evidence objects; plaintext verification stayed in memory and prior archives were preserved. This is a local copy.
+- [x] Verify actual scheduled monitoring executions. All 11 scheduled runs from 20 November through 23 November passed; the latest [run 45119382613](https://github.com/adminecarteo/ecarteo/actions/runs/45119382613) checked readiness/public pages and found zero eligible uploads for daily cleanup. Starts can be delayed by GitHub; this remains sampled monitoring.
+- [x] Run the production storage-orphan preview on 23 November: zero eligible unreferenced objects, zero removals. Continue periodic orphan review and responder-delivery checks as an ongoing operation.
+- [x] Refresh and verify the encrypted production backup locally. The latest 23 November snapshot at 10:00:10.202 UTC includes the inactive final QA profile; decrypt, ciphertext/manifest checksums, database catalog/full-stream decoding and freshness verification passed. The archive is 502,072 bytes with zero evidence objects; plaintext verification stayed in memory and all four prior archives were preserved. This is a local copy.
 - [ ] Configure an approved encrypted off-site database+file backup destination and verify retrieval, retention and backup-age alerts.
 - [x] Restore a database, accounts, report and evidence into an isolated Supabase stack and verify actual sign-in, file bytes and tenant isolation.
 - [ ] Retrieve a production backup from the approved off-site destination and measure recovery time against Intertrad’s targets.
@@ -55,7 +58,8 @@ The [production handover](PRODUCTION-HANDOVER.md) records the two environments a
 - [x] Verify client Reports at desktop and 390 × 844 mobile widths after the 20 November fixes.
 - [x] Complete a bounded warm production smoke check: 19 of 19 GETs passed at up to five concurrent requests, p95 1,599 ms; keyboard, validation and reflow checks passed at 320/390 px. This is not a capacity SLA or a physical-device certification.
 - [x] Run bounded mixed-read load checks against the owner's 10–25 concurrency target: 41/41 responses passed, including warmup/identity verification. At 10 concurrent requests p95 was 1,659 ms; at 25 it was 4,110 ms. The latter exceeds the earlier provisional 3-second guide. This is not sustained 25-user capacity, cold-start, upload or PDF-load certification.
-- [ ] Complete actual iPhone/Android acceptance and sustained representative workload testing against agreed latency/recovery targets. Browser viewport emulation does not satisfy physical-device acceptance.
+- [x] Complete a bounded repeated staging mixed workload: 224/224 expected responses over approximately 90 seconds, using three QA identities and up to 25 virtual workers. Request/draft writes and two small upload/delete cycles passed during concurrent reads; this run's temporary records/objects were removed. The 25-worker p95 was 4,569 ms; this is not 25 distinct users or a long capacity soak. [Scope and evidence](LAUNCH-STATUS-2026-11-23.md).
+- [ ] Complete actual iPhone/Android acceptance and any longer representative capacity testing against agreed latency/recovery targets. Browser viewport emulation does not satisfy physical-device acceptance.
 - [x] Update handover, launch status and this checklist with the verified launch release, previous PDF-fix history and precise remaining acceptance scope.
 - [ ] Record launch decision, unresolved limitations and escalation owner.
 

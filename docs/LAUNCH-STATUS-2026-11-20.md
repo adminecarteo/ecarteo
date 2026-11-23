@@ -1,5 +1,7 @@
 # Écartéo launch status — 20 November 2026
 
+Historical acceptance record. See [23 November follow-up](LAUNCH-STATUS-2026-11-23.md) for subsequent monitoring, backup, staging workload and email verification.
+
 Owner: Intertrad, `admin-dev@ecarteo.fr`. Live website: **https://ecarteo.fr**. Work remains within the approved free-resource budget. This record distinguishes completed checks from external dependencies and owner launch decisions.
 
 | Step                                     | Verified result                                                                                                                                                                                                                                                                                                                                                                                                            | Remaining action                                                                                                                                                                                                                |

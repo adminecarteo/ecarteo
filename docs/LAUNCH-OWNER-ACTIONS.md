@@ -1,14 +1,12 @@
 # Remaining owner actions
 
-Prepared 20 November 2026 for the approved free-resource constraint. The live app is https://ecarteo.fr. This is a concrete handover, not a declaration that external dependencies or business approvals are complete.
+Updated 23 November 2026 for the approved free-resource constraint. The live app is https://ecarteo.fr. See [current verification](LAUNCH-STATUS-2026-11-23.md) for the latest completed work. External dependencies and business approvals remain explicit below.
 
-## Staging SMTP
+## Staging SMTP configured
 
-Production email delivery is verified. Staging project `ikfxhhcxcmrgfuwxpjpr` still showed custom SMTP disabled after reload during final acceptance, despite reported saves. The supported CLI can authenticate, but the separate in-memory configuration-copy helper could not obtain the macOS Keychain credential; it changed no provider settings. Do not mark staging delivery complete from a generic success report alone.
+On 23 November, custom SMTP persisted after reload for project `ikfxhhcxcmrgfuwxpjpr`, with sender `admin-dev@ecarteo.fr`, sender name `Écartéo staging` and `send.one.com:587`. Both repository email designs and `[Staging]` subjects were saved and independently verified. Actual confirmation delivery, password recovery, new-password API/browser login and old-password rejection passed. See [current verification](LAUNCH-STATUS-2026-11-23.md) for final template-delivery evidence and QA cleanup.
 
-In the prepared Chrome tab under **🧪 Écartéo launch QA**, verify the URL contains that exact staging project reference. The prefilled sender is `admin-dev@ecarteo.fr`, sender name `Écartéo staging`, host `send.one.com`, port `587`, username `admin-dev@ecarteo.fr`. Enter the mailbox password privately and choose **Save changes**. Reload afterward and confirm **Enable custom SMTP** remains enabled. Project branch badges labelled “PRODUCTION” are not a substitute for checking the project reference. If using a fresh tab, open [staging SMTP](https://supabase.com/dashboard/project/ikfxhhcxcmrgfuwxpjpr/auth/smtp) and enter those non-secret settings as well.
-
-Then publish the repository confirmation/recovery templates with `[Staging]` subjects, preserve the staging Site URL, and repeat actual Inbox/link/new-password login acceptance using an approved QA alias. Do not alter production SMTP or real users' passwords. The local `.env.smtp-staging.command` is an alternative private setup helper; its reported success must still be verified against the saved dashboard and delivered messages.
+No further mailbox-password entry is currently required. Supabase Auth retains an existing email template cache across configuration reloads; immediately sent messages can temporarily use the prior design. Verify an actual delivered message after the cache window before diagnosing a saved template as broken. Do not change the production sender or real users' passwords while testing staging.
 
 ## Operator mailbox
 
