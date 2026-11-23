@@ -4,7 +4,7 @@ The permanent public address is **https://ecarteo.fr/**. Marketing pages and the
 
 ## Published routes
 
-The application generates `/robots.txt` and `/sitemap.xml` from runtime configuration. Public indexing is enabled only with production mode, `APP_URL=https://ecarteo.fr` (an optional trailing slash is accepted), and a deployment target other than `backend`. Staging and local deployments return `Disallow: /`, an empty sitemap and `noindex` on public pages.
+The Next application generates `/robots.txt` and `/sitemap.xml` from runtime configuration. The optional [static marketing build](../static-marketing/README.md) generates the same discovery policy at build time. Public indexing is enabled only with production mode, `APP_URL=https://ecarteo.fr` (an optional trailing slash is accepted), and a deployment target other than `backend`. Staging and local deployments return `Disallow: /`, an empty sitemap and `noindex` on public pages.
 
 The production sitemap contains these canonical URLs:
 
@@ -23,17 +23,22 @@ The application's production robots response allows public pages and assets, exc
 
 Render automatically returns a blocking robots response while a Free web service is asleep. A `/robots.txt` request neither reaches the application nor wakes it. When the service is active, Render serves the application's robots response. This is documented in [Render's Free service limitations](https://render.com/docs/free#automatic-robotstxt-responses).
 
-Therefore, a successful check while the application is awake does **not** prove consistently available crawling. Application code cannot override this sleeping-service response. The owner's free-only constraint remains in force: no compute upgrade or artificial keepalive is authorized by this change. Reliable crawling needs an explicitly approved always-on hosting change, or a separately planned static marketing deployment. Do not describe the cold-state restriction as resolved until that hosting work is complete.
+Therefore, a successful check while the application is awake does **not** prove consistently available crawling. Application code cannot override this sleeping-service response. The owner selected a free static marketing frontend; no compute upgrade or artificial keepalive is authorized. On 23 November at **14:05:11 UTC**, the static preview served all six public pages, robots, sitemap and 78 assets while the staging backend had no running instance both before and after the checks. The public domain has not moved at this preparation step, so the production cold-state restriction is not yet resolved. Follow the [tested routing, cutover and rollback guide](STATIC-MARKETING-DEPLOYMENT.md).
 
 The old `app` CNAME still points at Render, but Render no longer registers that hostname. A DNS manager may delete only the obsolete `app` CNAME; no replacement is required. Preserve apex, `www` and mail records. Removing this CNAME does not create a redirect for old links. Do not add a third Render hostname under the current free-only constraint.
 
 ## Google Search Console next step
 
-1. Resolve the sleeping-service crawl restriction before relying on sitemap submission for discovery.
-2. Use the approved Écartéo Google account to add the Domain property `ecarteo.fr` in [Google Search Console](https://search.google.com/search-console/).
-3. Give the exact Google-generated verification TXT record to the one.com DNS manager. Add it alongside existing TXT records; do not overwrite mail verification/SPF records. The token is property-specific and must come from Search Console. Follow [Google's ownership verification instructions](https://support.google.com/webmasters/answer/9008080?hl=en).
-4. Verify ownership, then submit `https://ecarteo.fr/sitemap.xml` in the Sitemaps screen.
-5. Inspect `https://ecarteo.fr/`, run the live URL test, and check that crawling is allowed and the declared canonical is the root URL. Monitor sitemap processing and indexing reports afterward; sitemap submission does not guarantee indexing.
+Use the approved Google account belonging to `admin-dev@ecarteo.fr`. Do not use an unrelated connected personal or GFTIJ account as the owner.
+
+1. In [Google Search Console](https://search.google.com/search-console/), select **Add property → URL prefix**, enter **`https://ecarteo.fr/`**, and choose **HTML tag**. This method verifies the canonical HTTPS prefix without a DNS change. A Domain property has broader protocol/subdomain coverage and requires DNS verification instead. [Google property types](https://support.google.com/webmasters/answer/34592?hl=en)
+2. Copy the generated `google-site-verification` meta tag. It is a public verification value, not a password, access token or login code. Configure only its `content` value as `GOOGLE_SITE_VERIFICATION`; do not paste the entire HTML tag into the environment variable.
+3. For the current Next service, apply the value to the production runtime and deploy. For the static frontend, set the same value before its production build and rebuild. The helper emits the tag only on the approved production origin; staging stays unverified. Keep the tag in future deployments because Google rechecks ownership. [Google ownership verification](https://support.google.com/webmasters/answer/9008080?hl=en)
+4. Confirm the exact tag appears once in the unauthenticated HTML source of `https://ecarteo.fr/`, then click **Verify** in Search Console. Record the property and successful ownership result; deploying a token alone is not a verification result.
+5. After the static domain cutover and cold-state crawl checks pass, open **Sitemaps**, submit **`https://ecarteo.fr/sitemap.xml`**, and record Google's processing result.
+6. Inspect `https://ecarteo.fr/`, run the live URL test, and check that crawling is allowed and the declared canonical is the root URL. Monitor sitemap processing and indexing reports afterward; sitemap submission does not guarantee indexing.
+
+If the owner instead selects the Domain property `ecarteo.fr`, send its exact Google-generated TXT record to the one.com DNS manager and add it alongside existing TXT records. Preserve SPF, mail verification and other owners' verification records. No property-specific token has been supplied at this preparation step; ownership and sitemap submission remain pending.
 
 Search Console ownership verification and submission are not performed by the application deployment. Blocking staging crawling also does not prove removal of any previously indexed staging URLs.
 
