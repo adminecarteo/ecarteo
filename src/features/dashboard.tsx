@@ -127,9 +127,10 @@ export default function Dashboard() {
             <Link className="btn primary" href="/app/requests">
               {tx({ fr: 'Accéder aux demandes d’audit', en: 'Go to audit requests' })}
             </Link>
-            <Link className="btn" href="/offres">
+            {/* Full document navigation crosses from the app to the static marketing site. */}
+            <a className="btn" href="/offres">
               {tx({ fr: 'Découvrir les offres d’audit', en: 'Explore audit services' })}
-            </Link>
+            </a>
           </div>
         </Card>
       </>
