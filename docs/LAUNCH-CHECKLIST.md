@@ -20,7 +20,11 @@ Latest operational follow-up: [23 November 2026](LAUNCH-STATUS-2026-11-23.md).
 
 ## Hosted release and owner sign-off
 
-The [production handover](PRODUCTION-HANDOVER.md) records the two environments and the actions assigned to Intertrad. The current verified application release is `9008544`, deployed on 20 November 2026; email template source `7ec5fc0` is published separately in Supabase. Split checks below distinguish completed configuration from provider delivery and launch approval that still need evidence.
+The [production handover](PRODUCTION-HANDOVER.md) records the two environments and the actions assigned to Intertrad. The current verified application release is `3394ae6`, deployed on 23 November 2026; email template source `7ec5fc0` is published separately in Supabase. Split checks below distinguish completed configuration from provider delivery and launch approval that still need evidence.
+
+- [x] Publish production robots/sitemap and canonical metadata for the six public pages; keep authentication forms out of indexing and staging blocked. Active-service HTTPS acceptance passed on 23 November.
+- [ ] Resolve Render Free's automatic blocking robots response while asleep before relying on consistent crawling. No paid hosting change is authorized. [Search discovery](SEARCH-INDEXING.md)
+- [ ] Verify `ecarteo.fr` in the approved Google Search Console account and submit the public sitemap after resolving the crawl-hosting limitation.
 
 - [x] Create separate staging/production Supabase projects and record their regions/owners.
 - [x] Set separate production and staging build/runtime credentials.

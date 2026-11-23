@@ -13,11 +13,23 @@ A permanent production operator, `operator@ecarteo.fr` (**Écartéo Opérateur**
 
 ## Latest operational follow-up — 23 November 2026
 
-[Current verification](LAUNCH-STATUS-2026-11-23.md) records 11 successful scheduled monitoring runs, the tested Actions runtime upgrade, a refreshed encrypted local backup, storage reconciliation, repeated 10/25-worker staging workload and staging SMTP progress. The application release below remains the current Render image; GitHub workflows and Supabase mail configuration take effect separately.
+[Current verification](LAUNCH-STATUS-2026-11-23.md) records 11 successful scheduled monitoring runs, the tested Actions runtime upgrade, a refreshed encrypted local backup, storage reconciliation, repeated 10/25-worker staging workload and staging SMTP acceptance. GitHub workflows and Supabase mail configuration take effect separately from the application image.
 
-## Current verified release — 20 November 2026
+## Current verified release — 23 November 2026
 
-Application commit `9008544943d4c17ecd445b405643a567e61d863a` is live on production as `dep-dc05ccflk1mc73cduup0` from **14:17:32 UTC**, following staging deployment `dep-dc0590t9fdbs73cja4t0`. Render's deployment API confirmed this live release again during final acceptance. The previous working production release is `1b5af2127be76aaa300f002cc0831669a4403d2d`, deployment `dep-dc01bjp42hec738d94fg`. No database migration was required. [Application quality gates](https://github.com/adminecarteo/ecarteo/actions/runs/44750654714)
+SEO application commit `3394ae6df013b559f318c93ffc5b6d038a25d5e0` is live on production as `dep-dc21lhavcj2c739voqsg` from **10:53:05 UTC / 11:53:05 Paris**, after staging deployment `dep-dc21hi59fdbs73c5d6cg`. No database, SMTP, account, DNS or paid-plan changes were made. Rollback is application commit `9008544943d4c17ecd445b405643a567e61d863a`, previous production deployment `dep-dc05ccflk1mc73cduup0`.
+
+[Quality gates 45158646306](https://github.com/adminecarteo/ecarteo/actions/runs/45158646306) passed 294 tests across 32 unit/integration files, 16 standard browser cases and 20 frontend fixture cases, both application builds and both Docker targets. The 35 environment-dependent standard browser skips are not passes. Formatting, lint, typecheck and production dependency audit passed; the audit reported zero vulnerabilities. This release's CI does not establish fresh live email or three-role audit acceptance.
+
+Certificate-validating production checks at **10:53:26 UTC** passed health, robots, sitemap XML, all six public canonical URLs, and login/signup/recovery metadata. Public pages are `index, follow`; authentication forms remain `noindex, nofollow` and are excluded from the sitemap. Hosted staging passed at **10:45:11 UTC** with a blocking robots response, an empty sitemap and `noindex` public metadata. The built server was also tested with production/staging `APP_URL` supplied after build.
+
+Independent redirect checks at **10:53:18 UTC** passed all four root/www HTTP/HTTPS cases with valid TLS, final root HTTP 200, preserved path/UTM parameters and only 301 redirects. [Production maintenance preview 45160148879](https://github.com/adminecarteo/ecarteo/actions/runs/45160148879) passed protected configuration/database/schema/storage readiness and public entry pages; it found zero eligible expired uploads. `apply=false` and `test_alert=false`; no objects were deleted and notification was skipped.
+
+The permanent public origin is `https://ecarteo.fr/`. `app.ecarteo.fr` remains retired. **Render Free still injects `Disallow: /` while the service sleeps; the deployed application cannot override that response.** No always-on hosting change is authorized. Search Console verification/submission remains pending. See [search discovery and next steps](SEARCH-INDEXING.md).
+
+## Previous authentication release — 20 November 2026
+
+Application commit `9008544943d4c17ecd445b405643a567e61d863a` was deployed on production as `dep-dc05ccflk1mc73cduup0` from **14:17:32 UTC**, following staging deployment `dep-dc0590t9fdbs73cja4t0`. Render's deployment API confirmed that release during final acceptance. Its previous working production release was `1b5af2127be76aaa300f002cc0831669a4403d2d`, deployment `dep-dc01bjp42hec738d94fg`. No database migration was required. [Application quality gates](https://github.com/adminecarteo/ecarteo/actions/runs/44750654714)
 
 This release adds explicit French/English already-registered signup guidance, login/reset links and protection against stale duplicate responses after the email is edited. Production browser acceptance passed. Email template source commit `7ec5fc0274c7e4a54e825488250db45d30360620` passed [its quality gates](https://github.com/adminecarteo/ecarteo/actions/runs/44755441675); those templates were published directly in production Supabase and do not require a Render application redeployment. Subsequent operational workflow changes run on GitHub, separately from the application image.
 

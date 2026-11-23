@@ -31,7 +31,7 @@ The old `app` CNAME still points at Render, but Render no longer registers that 
 
 1. Resolve the sleeping-service crawl restriction before relying on sitemap submission for discovery.
 2. Use the approved Écartéo Google account to add the Domain property `ecarteo.fr` in [Google Search Console](https://search.google.com/search-console/).
-3. Give the exact Google-generated verification TXT record to the one.com DNS manager. Add it alongside existing TXT records; do not overwrite mail verification/SPF records. The token is property-specific and must come from Search Console.
+3. Give the exact Google-generated verification TXT record to the one.com DNS manager. Add it alongside existing TXT records; do not overwrite mail verification/SPF records. The token is property-specific and must come from Search Console. Follow [Google's ownership verification instructions](https://support.google.com/webmasters/answer/9008080?hl=en).
 4. Verify ownership, then submit `https://ecarteo.fr/sitemap.xml` in the Sitemaps screen.
 5. Inspect `https://ecarteo.fr/`, run the live URL test, and check that crawling is allowed and the declared canonical is the root URL. Monitor sitemap processing and indexing reports afterward; sitemap submission does not guarantee indexing.
 
@@ -42,3 +42,5 @@ Search Console ownership verification and submission are not performed by the ap
 The SEO unit tests cover public/private discovery, exact canonical URLs, preview rejection and runtime configuration. The production build was also started twice with different `APP_URL` values supplied **after** build: production returned six sitemap URLs and indexable marketing metadata, while staging returned a blocking robots response, an empty sitemap and `noindex`. Login and signup remained `noindex` in both cases.
 
 Before accepting a deployment, check robots, sitemap XML, all six public pages and their canonical/robots metadata on the live service. Verify staging separately, and distinguish the application's active response from Render's sleeping-service response.
+
+Application commit `3394ae6` passed these hosted checks on 23 November 2026: staging at **10:45:11 UTC** and production at **10:53:26 UTC**. The [handover](PRODUCTION-HANDOVER.md) records deployment IDs, CI and rollback. Sanitized response receipts are retained locally under `ecarteo-seo-20261123`.
