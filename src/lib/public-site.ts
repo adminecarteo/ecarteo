@@ -22,6 +22,13 @@ export function publicIndexingEnabled(): boolean {
   );
 }
 
+/** Search Console's public content token, supplied at runtime, not the entire HTML tag. */
+export function publicSiteVerification(): Metadata['verification'] {
+  if (!publicIndexingEnabled()) return undefined;
+  const token = process.env.GOOGLE_SITE_VERIFICATION?.trim() ?? '';
+  return /^[A-Za-z0-9_-]{1,256}$/.test(token) ? { google: token } : undefined;
+}
+
 export function publicPageMetadata(path: PublicPagePath): Metadata {
   const enabled = publicIndexingEnabled();
   return {

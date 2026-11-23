@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import robots, { dynamic as robotsMode } from '@/app/robots';
 import sitemap, { dynamic as sitemapMode } from '@/app/sitemap';
-import { publicPageMetadata } from '@/lib/public-site';
+import { publicPageMetadata, publicSiteVerification } from '@/lib/public-site';
 
 beforeEach(() => {
   vi.stubEnv('NODE_ENV', 'production');
   vi.stubEnv('APP_URL', 'https://ecarteo.fr');
   vi.stubEnv('ECARTEO_DEPLOYMENT_TARGET', 'fullstack');
+  vi.stubEnv('GOOGLE_SITE_VERIFICATION', '');
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -49,6 +50,8 @@ describe('public search discovery', () => {
     ['ECARTEO_DEPLOYMENT_TARGET', 'backend'],
   ])('keeps previews out of search when %s is %s', (key, value) => {
     vi.stubEnv(key, value);
+    vi.stubEnv('GOOGLE_SITE_VERIFICATION', 'search-console_test-token-2026');
+    expect(publicSiteVerification()).toBeUndefined();
     expect(robots()).toEqual({ rules: { userAgent: '*', disallow: '/' } });
     expect(sitemap()).toEqual([]);
     expect(publicPageMetadata('/methode')).toEqual({
@@ -65,5 +68,26 @@ describe('public search discovery', () => {
     vi.stubEnv('APP_URL', 'https://ecarteo.fr/');
     expect(sitemap()).toHaveLength(6);
     expect(robots().sitemap).toBe('https://ecarteo.fr/sitemap.xml');
+  });
+
+  it('emits only the configured public verification token on production', () => {
+    expect(publicSiteVerification()).toBeUndefined();
+    vi.stubEnv('GOOGLE_SITE_VERIFICATION', '  search-console_test-token-2026  ');
+    expect(publicSiteVerification()).toEqual({ google: 'search-console_test-token-2026' });
+    vi.stubEnv('GOOGLE_SITE_VERIFICATION', 'replacement_test-token-2026');
+    expect(publicSiteVerification()).toEqual({ google: 'replacement_test-token-2026' });
+  });
+
+  it.each([
+    '',
+    '   ',
+    '<meta name="google-site-verification" content="test-token" />',
+    'google-site-verification=test-token',
+    'test token',
+    'test\ntoken',
+    'a'.repeat(257),
+  ])('omits an empty or malformed verification value: %s', (value) => {
+    vi.stubEnv('GOOGLE_SITE_VERIFICATION', value);
+    expect(publicSiteVerification()).toBeUndefined();
   });
 });

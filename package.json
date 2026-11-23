@@ -14,7 +14,10 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "config:check": "node --env-file-if-exists=.env.local scripts/validate-config.mjs",
-    "test:integration": "vitest run tests/workspace-server.test.ts tests/workspace-pagination.test.ts tests/accounts-requests.test.ts tests/billing-server.test.ts tests/operations-server.test.ts"
+    "test:integration": "vitest run tests/workspace-server.test.ts tests/workspace-pagination.test.ts tests/accounts-requests.test.ts tests/billing-server.test.ts tests/operations-server.test.ts",
+    "build:marketing": "node scripts/build-marketing.mjs",
+    "test:marketing": "node static-marketing/verify-build.mjs",
+    "test:marketing:e2e": "playwright test --config=playwright.marketing.config.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.2.0",
@@ -42,6 +45,7 @@
     "fake-indexeddb": "^6.2.0",
     "prettier": "^3.6.0",
     "typescript": "^5.9.0",
+    "vite": "8.3.5",
     "vitest": "^4.0.0"
   },
   "engines": {

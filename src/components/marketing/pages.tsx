@@ -209,7 +209,7 @@ export function OffersPageContent({ publisher }: { publisher?: ReactNode }) {
         </p>
       </section>
       <section
-        className={`${styles.section} ${styles.fullOffers}`}
+        className={styles.section}
         aria-label={copy('Les périmètres d’audit', 'Audit scopes')}
       >
         {getOffers(locale).map((offer) => (

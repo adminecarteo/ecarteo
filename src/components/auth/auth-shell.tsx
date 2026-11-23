@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useLocale } from '@/lib/locale-context';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { BrandMark } from '@/components/brand-mark';
@@ -15,14 +14,15 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </a>
       <div className={styles.shell}>
         <aside className={styles.brandPanel}>
-          <Link
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- The static marketing site needs a full document navigation. */}
+          <a
             href="/"
             className={styles.logo}
             aria-label={copy('Écartéo — Accueil', 'Écartéo — Home')}
           >
             <BrandMark inverted />
             <span>Écartéo</span>
-          </Link>
+          </a>
           <div>
             <h2>
               {copy(
@@ -65,9 +65,10 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
               ))}
             </ol>
           </div>
-          <Link className={styles.homeLink} href="/">
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- The static marketing site needs a full document navigation. */}
+          <a className={styles.homeLink} href="/">
             {copy('Retour au site', 'Back to the website')}
-          </Link>
+          </a>
         </aside>
         <main id="auth-content" className={styles.formPanel}>
           <LanguageSwitcher className={styles.languageSwitcher} />

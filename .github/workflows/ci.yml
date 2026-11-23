@@ -38,6 +38,8 @@ jobs:
       - run: npm test
         env:
           ECARTEO_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/ecarteo_test
+      - name: Verify independent static marketing output and preview indexing isolation
+        run: npm run test:marketing
       - run: npm run build
       - name: Validate frontend production build without server secrets
         env:
@@ -58,6 +60,8 @@ jobs:
       - run: npm run typecheck
       - run: npm audit --omit=dev --audit-level=moderate
       - run: npx playwright install --with-deps chromium
+      - name: Verify static marketing hydration, languages and mobile navigation
+        run: npm run test:marketing:e2e
       - run: npm run test:e2e
       - name: Verify frontend session bootstrap
         env:
