@@ -2,6 +2,7 @@ import { PublisherInformation } from '@/components/publisher-information';
 import type { Metadata } from 'next';
 import { HomePage } from '@/components/marketing/pages';
 import { getRequestLocale } from '@/server/locale';
+import { publicPageMetadata } from '@/lib/public-site';
 
 export async function generateMetadata(): Promise<Metadata> {
   const fr = (await getRequestLocale()) === 'fr';
@@ -12,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
     description: fr
       ? 'La plateforme d’audit du parcours client pour identifier les écarts, documenter les constats et piloter les actions d’amélioration.'
       : 'The customer journey audit platform for identifying gaps, documenting findings and managing improvements.',
-    robots: { index: true, follow: true },
+    ...publicPageMetadata('/'),
   };
 }
 export default function Page() {
