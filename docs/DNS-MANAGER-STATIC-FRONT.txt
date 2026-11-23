@@ -1,0 +1,26 @@
+Écartéo — bascule vers le frontend statique gratuit
+
+Adresse publique inchangée : https://ecarteo.fr/
+Cette modification doit être coordonnée avec le transfert du domaine dans Render.
+
+Dans le panneau one.com, sélectionner ecarteo.fr, puis les paramètres DNS :
+
+1. Modifier le CNAME existant, sans créer de doublon :
+   Type : CNAME
+   Nom / hôte : www
+   Ancienne cible : ecarteo-production.onrender.com
+   Nouvelle cible : ecarteo-public-preview.onrender.com
+   TTL : conserver la valeur existante / par défaut.
+
+2. Conserver l'enregistrement A du domaine principal :
+   Nom / hôte : vide (ou @ selon l'interface)
+   Adresse : 216.24.57.1
+
+3. Ne pas modifier les serveurs DNS, MX, SPF, DKIM, DMARC, autres TXT
+   de vérification ni les enregistrements des boîtes mail.
+
+4. Ne pas activer de redirection masquée ni de transfert web one.com.
+   Render assurera HTTPS et la redirection de www vers ecarteo.fr.
+
+Merci de confirmer une fois le CNAME enregistré. Nous vérifierons ensuite
+les DNS, les certificats HTTPS, les redirections et les connexions à l'application.
