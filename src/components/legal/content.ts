@@ -86,6 +86,10 @@ export const legalContent: Record<Locale, Record<LegalPageKind, LegalDocument>> 
           title: 'Cookies et stockage du navigateur',
           paragraphs: [
             'Des cookies d’authentification permettent de conserver et sécuriser la session. Le cookie de langue mémorise le français ou l’anglais pendant un an. Le navigateur conserve également les préférences de langue et de thème, ainsi que des brouillons liés à sa session pour éviter la perte du travail en cours.',
+            'Sur les pages publiques, Google Analytics 4 mesure les visites uniquement après votre accord. Avant votre choix ou si vous refusez, aucun outil Google Analytics n’est chargé. La mesure d’audience ne couvre pas les pages de connexion ni votre espace d’audit.',
+            'Si vous acceptez, Google reçoit des informations de visite telles que la page publique consultée, les caractéristiques du navigateur et des identifiants de cookies. Les informations de compte, les rapports et les preuves ne sont pas transmis à cet outil. Les fonctionnalités publicitaires sont désactivées. Google peut traiter des données hors de l’Espace économique européen ; ses informations de confidentialité et de transfert sont accessibles à l’adresse policies.google.com/privacy.',
+            'Les cookies de mesure d’audience, dont les noms commencent par _ga, sont limités à 180 jours sans prolongation automatique. Les paramètres et fragments des adresses de pages, ainsi que l’adresse de la page précédente, ne sont pas transmis par notre configuration de mesure.',
+            'Vous pouvez accepter, refuser ou personnaliser la mesure d’audience, puis modifier ou retirer votre accord à tout moment avec « Gérer les cookies » dans le pied de page. Votre choix est conservé pendant six mois dans ce navigateur. Le retrait arrête les nouvelles mesures et supprime les cookies Google Analytics accessibles depuis ce site ; il ne supprime pas rétroactivement les données déjà transmises.',
             'Vous pouvez effacer ces éléments dans les réglages du navigateur. Cela peut vous déconnecter, réinitialiser vos préférences ou supprimer les brouillons non enregistrés.',
           ],
         },
@@ -214,6 +218,10 @@ export const legalContent: Record<Locale, Record<LegalPageKind, LegalDocument>> 
           title: 'Cookies and browser storage',
           paragraphs: [
             'Authentication cookies maintain and secure your session. A language cookie remembers French or English for one year. The browser also stores language/theme preferences and session-scoped work drafts to reduce loss of unfinished work.',
+            'On public pages, Google Analytics 4 measures visits only after you agree. Before you choose, or if you refuse, no Google Analytics tool is loaded. Audience measurement does not cover sign-in pages or your audit workspace.',
+            'If you accept, Google receives visit information such as the public page viewed, browser characteristics and cookie identifiers. Account information, reports and evidence are not sent to this tool. Advertising features are disabled. Google may process data outside the European Economic Area; its privacy and transfer information is available at policies.google.com/privacy.',
+            'Audience-measurement cookies, whose names start with _ga, are limited to 180 days without automatic renewal. Our measurement configuration does not send page-address query parameters or fragments, or the previous page’s address.',
+            'You can accept, refuse or customise audience measurement, then change or withdraw permission at any time using “Manage cookies” in the footer. Your choice is saved for six months in this browser. Withdrawing stops new measurements and removes Google Analytics cookies accessible from this site; it does not retroactively delete information already sent.',
             'You can remove these items in your browser settings. Doing so may sign you out, reset preferences or remove drafts you have not saved.',
           ],
         },

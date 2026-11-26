@@ -1,12 +1,12 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { getOffers } from './content';
 import { useLocale } from '@/lib/locale-context';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import styles from './marketing.module.css';
 import { BrandMark } from '@/components/brand-mark';
+import { CookieConsent } from './cookie-consent';
 
 export function Arrow({ diagonal = false }: { diagonal?: boolean }) {
   return (
@@ -34,13 +34,13 @@ export function ActionLink({
   light?: boolean;
 }) {
   return (
-    <Link
+    <a
       href={href}
       className={`${styles.action} ${secondary ? styles.secondaryAction : styles.primaryAction} ${light ? styles.lightAction : ''}`}
     >
       {children}
       <Arrow />
-    </Link>
+    </a>
   );
 }
 
@@ -78,34 +78,36 @@ export function MarketingShell({
         </a>
         <header className={styles.header}>
           <div className={styles.headerInner}>
-            <Link
+            {/* Full document navigation leaves the consented public analytics runtime behind. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a
               href="/"
               className={styles.brand}
               aria-label={copy('Écartéo, accueil', 'Écartéo, home')}
             >
               <BrandMark />
               <span>Écartéo</span>
-            </Link>
+            </a>
             <nav
               className={styles.desktopNav}
               aria-label={copy('Navigation principale', 'Main navigation')}
             >
-              <Link href="/methode" aria-current={current === 'methode' ? 'page' : undefined}>
+              <a href="/methode" aria-current={current === 'methode' ? 'page' : undefined}>
                 {copy('Méthode', 'Method')}
-              </Link>
-              <Link href="/offres" aria-current={current === 'offres' ? 'page' : undefined}>
+              </a>
+              <a href="/offres" aria-current={current === 'offres' ? 'page' : undefined}>
                 {copy('Offres', 'Offers')}
-              </Link>
+              </a>
             </nav>
             <LanguageSwitcher className={styles.languageSwitcher} />
             <div className={styles.accountNav}>
-              <Link href="/login" className={styles.loginLink}>
+              <a href="/login" className={styles.loginLink}>
                 {copy('Se connecter', 'Sign in')}
-              </Link>
-              <Link href="/signup" className={styles.headerSignup}>
+              </a>
+              <a href="/signup" className={styles.headerSignup}>
                 {copy('Créer un compte', 'Create an account')}
                 <Arrow />
-              </Link>
+              </a>
             </div>
             <details
               ref={mobileMenu}
@@ -120,14 +122,14 @@ export function MarketingShell({
                 Menu<span aria-hidden="true">＋</span>
               </summary>
               <nav aria-label={copy('Navigation mobile', 'Mobile navigation')}>
-                <Link href="/methode" aria-current={current === 'methode' ? 'page' : undefined}>
+                <a href="/methode" aria-current={current === 'methode' ? 'page' : undefined}>
                   {copy('La méthode', 'Our method')}
-                </Link>
-                <Link href="/offres" aria-current={current === 'offres' ? 'page' : undefined}>
+                </a>
+                <a href="/offres" aria-current={current === 'offres' ? 'page' : undefined}>
                   {copy('Les offres', 'Our offers')}
-                </Link>
-                <Link href="/login">{copy('Se connecter', 'Sign in')}</Link>
-                <Link href="/signup">{copy('Créer un compte', 'Create an account')}</Link>
+                </a>
+                <a href="/login">{copy('Se connecter', 'Sign in')}</a>
+                <a href="/signup">{copy('Créer un compte', 'Create an account')}</a>
               </nav>
             </details>
           </div>
@@ -135,8 +137,13 @@ export function MarketingShell({
         <main id="contenu" className={styles.main}>
           {children}
         </main>
-        <FinalCallout />
-        {publisher}
+        <footer>
+          <FinalCallout />
+          <div className={styles.footerLegal}>
+            {publisher}
+            <CookieConsent />
+          </div>
+        </footer>
       </div>
     </div>
   );
@@ -264,10 +271,10 @@ export function OffersOverview() {
           </span>
           <h3>{offer.name}</h3>
           <p>{offer.description}</p>
-          <Link href={`/offres#${offer.id}`} className={styles.offerLink}>
+          <a href={`/offres#${offer.id}`} className={styles.offerLink}>
             {copy('Découvrir', 'Explore')}
             <span className={styles.srOnly}> {offer.name}</span>
-          </Link>
+          </a>
         </article>
       ))}
     </div>
@@ -277,19 +284,21 @@ export function OffersOverview() {
 export function FinalCallout() {
   const { copy } = useLocale();
   return (
-    <footer className={styles.finalCallout}>
-      <Link
+    <div className={styles.finalCallout}>
+      {/* Full document navigation also crosses the static/Next hosting boundary. */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+      <a
         href="/"
         className={`${styles.brand} ${styles.invertedBrand}`}
         aria-label={copy('Écartéo, accueil', 'Écartéo, home')}
       >
         <BrandMark inverted />
         <span>Écartéo</span>
-      </Link>
+      </a>
       <p>
         {copy('Prêt à auditer votre parcours client ?', 'Ready to audit your customer journey?')}
       </p>
       <ActionLink href="/signup">{copy('Créer mon espace', 'Create my workspace')}</ActionLink>
-    </footer>
+    </div>
   );
 }

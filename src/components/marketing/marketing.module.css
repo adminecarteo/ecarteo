@@ -52,6 +52,14 @@
   box-shadow: 0 4px 22px #181b5209;
 }
 
+.footerLegal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  background: #f5f8fb;
+}
+
 .header {
   position: relative;
   z-index: 2;

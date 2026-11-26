@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { MarketingShell } from '@/components/marketing/site';
 import { useLocale } from '@/lib/locale-context';
@@ -20,7 +19,9 @@ export function LegalPage({ kind, publisher }: { kind: LegalPageKind; publisher:
           <h1>{content.title}</h1>
           <p>{content.description}</p>
           <p className={styles.updated}>
-            {copy('Version du 20 novembre 2026', 'Version dated 20 November 2026')}
+            {kind === 'privacy'
+              ? copy('Version du 26 novembre 2026', 'Version dated 26 November 2026')
+              : copy('Version du 20 novembre 2026', 'Version dated 20 November 2026')}
           </p>
         </header>
         <nav
@@ -28,13 +29,13 @@ export function LegalPage({ kind, publisher }: { kind: LegalPageKind; publisher:
           aria-label={copy('Documents du service', 'Service documents')}
         >
           {(Object.keys(legalRoutes) as LegalPageKind[]).map((page) => (
-            <Link
+            <a
               key={page}
               href={legalRoutes[page]}
               aria-current={page === kind ? 'page' : undefined}
             >
               {legalContent[locale][page].title}
-            </Link>
+            </a>
           ))}
         </nav>
         {content.sections.map((section, index) => (
@@ -84,9 +85,14 @@ export function LegalPage({ kind, publisher }: { kind: LegalPageKind; publisher:
               {copy('Supabase : régions et transferts', 'Supabase: regions and transfers')}
             </a>
             {kind === 'privacy' && (
-              <a href="https://www.cnil.fr/fr/mes-demarches/les-droits-pour-maitriser-vos-donnees-personnelles">
-                {copy('CNIL : vos droits', 'CNIL: your rights')}
-              </a>
+              <>
+                <a href="https://policies.google.com/privacy">
+                  {copy('Google : confidentialité', 'Google: privacy')}
+                </a>
+                <a href="https://www.cnil.fr/fr/mes-demarches/les-droits-pour-maitriser-vos-donnees-personnelles">
+                  {copy('CNIL : vos droits', 'CNIL: your rights')}
+                </a>
+              </>
             )}
           </nav>
         )}
