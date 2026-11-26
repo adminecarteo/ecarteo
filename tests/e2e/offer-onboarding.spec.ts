@@ -4,6 +4,35 @@ import { expect, test } from '@playwright/test';
 // This file exercises private, single-use links in the local Mailpit test.
 test.use({ trace: 'off', screenshot: 'off' });
 
+test('language controls wait for hydration before accepting a choice on a new signup document', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await context.addCookies([{ name: 'ecarteo-locale', value: 'en', url: baseURL! }]);
+  let releaseScripts!: () => void;
+  const hydrationGate = new Promise<void>((resolve) => {
+    releaseScripts = resolve;
+  });
+  await page.route('**/_next/static/**', async (route) => {
+    if (route.request().resourceType() === 'script') await hydrationGate;
+    await route.continue();
+  });
+  try {
+    await page.goto('/signup?offer=flash', { waitUntil: 'commit' });
+    await expect(page.getByText(/Selected offer: Flash audit/)).toBeVisible();
+    // A visible SSR button cannot handle clicks until its JavaScript has hydrated.
+    await expect(page.getByRole('button', { name: 'FR — Français' })).toBeDisabled();
+  } finally {
+    releaseScripts();
+  }
+  const french = page.getByRole('button', { name: 'FR — Français' });
+  await expect(french).toBeEnabled();
+  await french.click();
+  await expect(page.getByText(/Offre choisie : Audit Flash/)).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
+});
+
 test('offer selection survives switching between signup, sign-in and password recovery', async ({
   page,
 }) => {

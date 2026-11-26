@@ -14,10 +14,16 @@ function fixture(url = 'https://ecarteo.fr/') {
   const events = new Map<string, (event?: unknown) => void>();
   const storage = new Map<string, string>();
   const scripts: FakeScript[] = [];
+  const commandsAtScriptAppend: unknown[][][] = [];
   const cookies = new Map<string, string>();
   const cookieWrites: string[] = [];
   const document = {
-    head: { appendChild: (script: FakeScript) => scripts.push(script) },
+    head: {
+      appendChild: (script: FakeScript) => {
+        commandsAtScriptAppend.push((window.dataLayer ?? []).map((entry) => Array.from(entry)));
+        scripts.push(script);
+      },
+    },
     createElement: () => ({ remove: vi.fn() }),
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
@@ -49,6 +55,7 @@ function fixture(url = 'https://ecarteo.fr/') {
     window,
     storage,
     scripts,
+    commandsAtScriptAppend,
     cookies,
     cookieWrites,
     events,
@@ -100,6 +107,15 @@ describe('public analytics consent', () => {
     expect(page.scripts[0].src).toBe('https://www.googletagmanager.com/gtag/js?id=G-X9BFFJ9M78');
     expect(page.scripts[0].referrerPolicy).toBe('no-referrer');
     expect(page.pageViews()).toHaveLength(0);
+    // gtag.js can initialize immediately when executed, before onload. Its first
+    // configuration must already suppress automatic views and raw URL capture.
+    const initialConfig = page.commandsAtScriptAppend[0].find((entry) => entry[0] === 'config');
+    expect(initialConfig?.[2]).toMatchObject({
+      send_page_view: false,
+      page_location: 'https://ecarteo.fr/',
+      page_referrer: '',
+    });
+    expect(page.commandsAtScriptAppend[0].some((entry) => entry[0] === 'event')).toBe(false);
     page.scripts[0].onload?.();
     runtime.trackPublicPage();
     page.events.get('focus')?.();

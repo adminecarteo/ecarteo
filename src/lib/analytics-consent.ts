@@ -127,11 +127,13 @@ function stopAnalytics(): void {
   if (configured) target.gtag?.('consent', 'update', deniedConsent);
   configured = false;
   lastPage = null;
-  if (script && !tagLoaded) {
-    script.onload = null;
-    script.onerror = null;
-    script.remove();
-    script = null;
+  if (!tagLoaded) {
+    if (script) {
+      script.onload = null;
+      script.onerror = null;
+      script.remove();
+      script = null;
+    }
     // A removed async script can finish downloading. Never leave measurement commands
     // queued for it to execute after the visitor has withdrawn consent.
     if (target.dataLayer) target.dataLayer.length = 0;
@@ -141,6 +143,14 @@ function stopAnalytics(): void {
 
 function configureAnalytics(target: AnalyticsWindow, path: PublicPagePath): void {
   if (configured) return;
+  // These commands must precede loading gtag.js: a tag can otherwise initialize
+  // its default page_view before the script's load callback runs.
+  target.gtag?.('set', {
+    send_page_view: false,
+    page_location: `${PUBLIC_SITE_ORIGIN}${path}`,
+    page_title: pageTitles[path],
+    page_referrer: '',
+  });
   target.gtag?.('consent', 'update', { ...deniedConsent, analytics_storage: 'granted' });
   target.gtag?.('js', new Date());
   target.gtag?.('config', GA4_MEASUREMENT_ID, {
@@ -205,6 +215,9 @@ function synchronizeAnalytics(): void {
   target.gtag('consent', 'default', deniedConsent);
   target.gtag('set', 'ads_data_redaction', true);
   target.gtag('set', 'url_passthrough', false);
+  const path = publicPath();
+  if (!path) return;
+  configureAnalytics(target, path);
   script = target.document.createElement('script');
   script.id = 'ecarteo-ga4';
   script.async = true;
