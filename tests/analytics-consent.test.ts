@@ -82,8 +82,31 @@ describe('public analytics consent', () => {
 
   it('is safe during server rendering', () => {
     expect(runtime.readConsent()).toBeNull();
+    expect(runtime.getConsentRecord()).toBeNull();
     expect(() => runtime.initializeAnalytics()()).not.toThrow();
     expect(() => runtime.saveConsent(true)).not.toThrow();
+  });
+
+  it('exports a stable, immutable and minimal current consent record', () => {
+    const page = fixture();
+    runtime.saveConsent(true);
+    const first = runtime.getConsentRecord();
+    expect(first).toEqual({
+      version: 1,
+      analytics: true,
+      savedAt: Date.now(),
+      expiresAt: Date.now() + runtime.CONSENT_LIFETIME_MS,
+    });
+    expect(runtime.getConsentRecord()).toBe(first);
+    expect(Object.isFrozen(first)).toBe(true);
+    page.storage.set(
+      runtime.CONSENT_STORAGE_KEY,
+      JSON.stringify({ ...first, email: 'must-not-leave@example.com', accountId: 'private' }),
+    );
+    expect(runtime.getConsentRecord()).toBe(first);
+    expect(runtime.getConsentRecord()).not.toHaveProperty('email');
+    vi.advanceTimersByTime(runtime.CONSENT_LIFETIME_MS);
+    expect(runtime.getConsentRecord()).toBeNull();
   });
 
   it('does not create a Google queue or load a script before consent or after refusal', () => {

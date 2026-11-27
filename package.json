@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "config:check": "node --env-file-if-exists=.env.local scripts/validate-config.mjs",
-    "test:integration": "vitest run tests/workspace-server.test.ts tests/workspace-pagination.test.ts tests/accounts-requests.test.ts tests/billing-server.test.ts tests/operations-server.test.ts",
+    "test:integration": "vitest run tests/workspace-server.test.ts tests/workspace-pagination.test.ts tests/accounts-requests.test.ts tests/billing-server.test.ts tests/operations-server.test.ts tests/registration-analytics-server.test.ts",
     "build:marketing": "node scripts/build-marketing.mjs",
     "test:marketing": "node static-marketing/verify-build.mjs",
     "test:marketing:e2e": "playwright test --config=playwright.marketing.config.ts"

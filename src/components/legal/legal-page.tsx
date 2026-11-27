@@ -20,7 +20,7 @@ export function LegalPage({ kind, publisher }: { kind: LegalPageKind; publisher:
           <p>{content.description}</p>
           <p className={styles.updated}>
             {kind === 'privacy'
-              ? copy('Version du 26 novembre 2026', 'Version dated 26 November 2026')
+              ? copy('Version du 27 novembre 2026', 'Version dated 27 November 2026')
               : copy('Version du 20 novembre 2026', 'Version dated 20 November 2026')}
           </p>
         </header>

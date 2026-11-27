@@ -73,8 +73,8 @@ export function CookieConsent() {
             <h2>{copy('Vos cookies, votre choix.', 'Your cookies, your choice.')}</h2>
             <p>
               {copy(
-                'Avec votre accord, Google Analytics nous aide à comprendre les visites des pages publiques. Les cookies nécessaires restent actifs. Refuser ne change pas votre accès au site.',
-                'With your permission, Google Analytics helps us understand visits to our public pages. Necessary cookies stay active. Refusing does not change your access to the site.',
+                'Avec votre accord, Google Analytics mesure les visites des pages publiques et les inscriptions finalisées après confirmation de l’email. Les cookies nécessaires restent actifs. Refuser ne change pas votre accès au site.',
+                'With your permission, Google Analytics measures visits to our public pages and registrations completed after email confirmation. Necessary cookies stay active. Refusing does not change your access to the site.',
               )}{' '}
               <a href="/confidentialite">{copy('En savoir plus', 'Learn more')}</a>
             </p>
@@ -164,8 +164,8 @@ export function CookieConsent() {
               </label>
               <p id="analytics-description">
                 {copy(
-                  'Cette option mesure les pages publiques consultées pour nous aider à améliorer le site. Elle ne suit pas les pages de connexion ni votre espace d’audit. Google reçoit les données de visite uniquement après votre accord.',
-                  'This option measures visits to public pages to help us improve the site. It does not track sign-in pages or your audit workspace. Google receives visit data only after you agree.',
+                  'Cette option mesure les pages publiques consultées et compte une fois les nouvelles inscriptions, après confirmation de l’email, si votre accord est toujours valide. Elle ne suit pas la navigation sur les pages de connexion, les liens de vérification ni votre espace d’audit. Aucun nom, email ou contenu du formulaire n’est envoyé à Google.',
+                  'This option measures public page visits and counts new registrations once, after email confirmation, if your consent is still valid. It does not track navigation on sign-in pages, verification links or your audit workspace. No name, email address or form contents are sent to Google.',
                 )}
               </p>
             </div>

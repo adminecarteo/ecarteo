@@ -53,6 +53,15 @@ const config: NextConfig = {
         source: '/auth/:action(callback|confirm)',
         headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }],
       },
+      ...['/registration-complete', '/api/analytics/registration'].map((source) => ({
+        source,
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'Vary', value: 'Cookie' },
+          { key: 'Referrer-Policy', value: 'no-referrer' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+        ],
+      })),
     ];
   },
 };

@@ -5,7 +5,7 @@ export const CONSENT_STORAGE_KEY = 'ecarteo.cookie-consent.v1';
 export const CONSENT_LIFETIME_MS = 180 * 24 * 60 * 60 * 1000;
 export type ConsentChoice = 'accepted' | 'refused' | null;
 
-type ConsentRecord = {
+export type ConsentRecord = {
   version: 1;
   analytics: boolean;
   savedAt: number;
@@ -41,6 +41,7 @@ let lastPage: string | null = null;
 let initialized = 0;
 let expiryTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
+let recordSnapshot: Readonly<ConsentRecord> | null = null;
 
 function browser(): AnalyticsWindow | null {
   return typeof window === 'undefined' ? null : (window as AnalyticsWindow);
@@ -79,6 +80,28 @@ function storedRecord(): ConsentRecord | null {
   } catch {
     return null;
   }
+}
+
+/** The current, validated proof, limited to consent fields and safe to pass to our API. */
+export function getConsentRecord(): Readonly<ConsentRecord> | null {
+  const record = storedRecord();
+  if (!record) {
+    recordSnapshot = null;
+    return null;
+  }
+  if (
+    recordSnapshot?.analytics !== record.analytics ||
+    recordSnapshot.savedAt !== record.savedAt ||
+    recordSnapshot.expiresAt !== record.expiresAt
+  ) {
+    recordSnapshot = Object.freeze({
+      version: 1,
+      analytics: record.analytics,
+      savedAt: record.savedAt,
+      expiresAt: record.expiresAt,
+    });
+  }
+  return recordSnapshot;
 }
 
 /** Stable primitive snapshots are safe for React's useSyncExternalStore and SSR. */
